@@ -1,0 +1,58 @@
+name: Process Video Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      video_filename:
+        description: 'Video file in incoming/ folder'
+        required: true
+        type: string
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install Python deps
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run pipeline
+        run: |
+          python pipeline/render.py             --input "incoming/${{ github.event.inputs.video_filename }}"             --output-dir processed
+
+      - name: Update queue
+        run: |
+          python pipeline/update_queue.py             --video "${{ github.event.inputs.video_filename }}"             --status completed
+
+      - name: Commit results
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add processed/ queue.json incoming/
+          git diff --cached --quiet || git commit -m "pipeline: process ${{ github.event.inputs.video_filename }}"
+          git push
