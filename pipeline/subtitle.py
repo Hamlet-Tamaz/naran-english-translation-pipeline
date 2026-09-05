@@ -1,7 +1,13 @@
-from moviepy.editor import (
-    VideoFileClip, AudioFileClip, CompositeAudioClip,
-    TextClip, CompositeVideoClip
-)
+try:
+    from moviepy.editor import (
+        VideoFileClip, AudioFileClip, CompositeAudioClip,
+        TextClip, CompositeVideoClip
+    )
+except ImportError:
+    from moviepy import (
+        VideoFileClip, AudioFileClip, CompositeAudioClip,
+        TextClip, CompositeVideoClip
+    )
 import os
 
 def burn(video_path: str, translation: dict, voiceover_path: str, output_dir: str) -> str:
