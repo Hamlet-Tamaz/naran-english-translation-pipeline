@@ -1,5 +1,7 @@
 openai-whisper
-openai
+deep-translator
 gTTS
+moviepy
 srt
-requests
+openai
+pydub
