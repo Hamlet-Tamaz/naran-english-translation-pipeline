@@ -26,6 +26,7 @@ export default function Dashboard() {
   const [checkingEnv, setCheckingEnv] = useState(true);
   const [previewVideo, setPreviewVideo] = useState<string | null>(null);
   const [previewCaption, setPreviewCaption] = useState<string>("");
+  const [processingFile, setProcessingFile] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -34,6 +35,21 @@ export default function Dashboard() {
     const interval = setInterval(fetchQueue, 10000);
     return () => clearInterval(interval);
   }, []);
+
+  // Auto-clear processing state when video completes
+  useEffect(() => {
+    if (processingFile) {
+      const completed = videos.find(v => v.filename === processingFile && v.status === "completed");
+      const failed = videos.find(v => v.filename === processingFile && v.status === "failed");
+      if (completed) {
+        setProcessingFile(null);
+        setMessage("✅ Processing complete! Video ready.");
+      } else if (failed) {
+        setProcessingFile(null);
+        setMessage("❌ Processing failed. Check GitHub Actions logs.");
+      }
+    }
+  }, [videos, processingFile]);
 
   async function checkEnv() {
     try {
@@ -49,7 +65,7 @@ export default function Dashboard() {
 
   async function fetchQueue() {
     try {
-      const res = await fetch("https://raw.githubusercontent.com/Hamlet-Tamaz/naran-english-translation-pipeline/main/queue.json");
+      const res = await fetch("https://raw.githubusercontent.com/Hamlet-Tamaz/naran-english-translation-pipeline/main/queue.json?t=" + Date.now());
       const data = await res.json();
       setVideos(data.videos || []);
     } catch (e) {
@@ -68,6 +84,7 @@ export default function Dashboard() {
       });
       const data = await res.json();
       setMessage(data.message || "Re-processing started!");
+      fetchQueue();
     } catch (e) {
       setMessage("Error re-processing video. Check console.");
     }
@@ -75,8 +92,8 @@ export default function Dashboard() {
   }
 
   async function triggerPipeline(filename: string) {
-    setLoading(true);
-    setMessage("Triggering pipeline...");
+    setProcessingFile(filename);
+    setMessage("⏳ Processing started... Takes ~3-5 minutes. Page auto-refreshes.");
     try {
       const res = await fetch("/api/trigger", {
         method: "POST",
@@ -87,8 +104,8 @@ export default function Dashboard() {
       setMessage(data.message || "Pipeline triggered!");
     } catch (e) {
       setMessage("Error triggering pipeline. Check console.");
+      setProcessingFile(null);
     }
-    setLoading(false);
   }
 
   async function triggerScan() {
@@ -98,6 +115,7 @@ export default function Dashboard() {
       const res = await fetch("/api/scan", { method: "POST" });
       const data = await res.json();
       setMessage(data.message || "Scan triggered!");
+      fetchQueue();
     } catch (e) {
       setMessage("Error triggering scan.");
     }
@@ -121,7 +139,7 @@ export default function Dashboard() {
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       const data = await res.json();
       if (res.ok) {
-        setMessage(`Uploaded ${file.name}! Appears in Pending.`);
+        setMessage(`✅ Uploaded ${file.name}! Appears in Pending.`);
         setUploadProgress(100);
         fetchQueue();
       } else {
@@ -170,7 +188,7 @@ export default function Dashboard() {
         body: JSON.stringify({ filename: file.name, publicUrl, objectKey }),
       });
       if (confirmRes.ok) {
-        setMessage(`Uploaded ${file.name}! Appears in Pending.`);
+        setMessage(`✅ Uploaded ${file.name}! Appears in Pending.`);
         setUploadProgress(100);
         fetchQueue();
       } else {
@@ -187,8 +205,6 @@ export default function Dashboard() {
   async function openPreview(filename: string) {
     const videoId = filename.replace(".mp4", "");
     const videoUrl = `https://raw.githubusercontent.com/Hamlet-Tamaz/naran-english-translation-pipeline/main/processed/${videoId}/final.mp4`;
-
-    // Fetch caption
     try {
       const res = await fetch(`https://raw.githubusercontent.com/Hamlet-Tamaz/naran-english-translation-pipeline/main/processed/${videoId}/caption.txt`);
       const caption = await res.text();
@@ -196,7 +212,6 @@ export default function Dashboard() {
     } catch (e) {
       setPreviewCaption("");
     }
-
     setPreviewVideo(videoUrl);
   }
 
@@ -221,8 +236,6 @@ export default function Dashboard() {
   const processing = videos.filter(v => v.status === "processing");
 
   const githubReady = envStatus?.github_ready ?? false;
-  const kimiReady = envStatus?.kimi_ready ?? false;
-  const openaiReady = envStatus?.openai_ready ?? false;
   const r2Ready = envStatus?.r2_ready ?? false;
   const canUpload = githubReady;
 
@@ -239,6 +252,7 @@ export default function Dashboard() {
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <StatusRow label="GitHub API" ready={githubReady} />
             <StatusRow label="Cloud Storage (R2)" ready={r2Ready} optional />
+            <StatusRow label="OpenAI Voiceover" ready={true} />
           </div>
           {!githubReady && (
             <div style={{ marginTop: 10, fontSize: 12, color: "#f87171" }}>
@@ -249,7 +263,7 @@ export default function Dashboard() {
       )}
 
       {message && (
-        <div style={{ padding: "12px 16px", borderRadius: 8, marginBottom: 20, background: message.includes("Error") ? "rgba(239,68,68,0.15)" : "rgba(34,197,94,0.15)", color: message.includes("Error") ? "#fca5a5" : "#86efac", fontSize: 14 }}>
+        <div style={{ padding: "12px 16px", borderRadius: 8, marginBottom: 20, background: message.includes("Error") || message.includes("failed") ? "rgba(239,68,68,0.15)" : message.includes("complete") ? "rgba(34,197,94,0.15)" : "rgba(59,130,246,0.15)", color: message.includes("Error") || message.includes("failed") ? "#fca5a5" : message.includes("complete") ? "#86efac" : "#93c5fd", fontSize: 14 }}>
           {message}
         </div>
       )}
@@ -281,7 +295,7 @@ export default function Dashboard() {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 32 }}>
         <StatCard label="Pending" value={pending.length} color="#f59e0b" />
-        <StatCard label="Processing" value={processing.length} color="#3b82f6" />
+        <StatCard label="Processing" value={processing.length + (processingFile ? 1 : 0)} color="#3b82f6" />
         <StatCard label="Completed" value={completed.length} color="#22c55e" />
       </div>
 
@@ -296,9 +310,13 @@ export default function Dashboard() {
         ) : (
           pending.map(v => (
             <VideoRow key={v.filename} video={v}>
-              <button onClick={() => triggerPipeline(v.filename)} disabled={loading} style={{ padding: "8px 16px", borderRadius: 6, border: "none", background: "#fafafa", color: "#18181b", fontSize: 13, fontWeight: 500, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1 }}>
-                {loading ? "Starting..." : "Process"}
-              </button>
+              {processingFile === v.filename ? (
+                <span style={{ fontSize: 13, color: "#3b82f6", fontWeight: 500 }}>⏳ Processing...</span>
+              ) : (
+                <button onClick={() => triggerPipeline(v.filename)} disabled={!!processingFile} style={{ padding: "8px 16px", borderRadius: 6, border: "none", background: "#fafafa", color: "#18181b", fontSize: 13, fontWeight: 500, cursor: processingFile ? "not-allowed" : "pointer", opacity: processingFile ? 0.6 : 1 }}>
+                  Process
+                </button>
+              )}
             </VideoRow>
           ))
         )}
@@ -314,15 +332,10 @@ export default function Dashboard() {
                 <button onClick={() => openPreview(v.filename)} style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid #3b82f6", background: "transparent", color: "#3b82f6", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
                   ▶ Watch
                 </button>
-                <button onClick={() => reprocessVideo(v.filename)} disabled={loading} style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid #f59e0b", background: "transparent", color: "#f59e0b", fontSize: 13, fontWeight: 500, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1 }}>
+                <button onClick={() => reprocessVideo(v.filename)} disabled={loading || !!processingFile} style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid #f59e0b", background: "transparent", color: "#f59e0b", fontSize: 13, fontWeight: 500, cursor: (loading || processingFile) ? "not-allowed" : "pointer", opacity: (loading || processingFile) ? 0.6 : 1 }}>
                   🔄 Re-process
                 </button>
-                <a
-                  href={`https://github.com/Hamlet-Tamaz/naran-english-translation-pipeline/tree/main/processed/${v.filename.replace(".mp4", "")}`}
-                  target="_blank"
-                  rel="noopener"
-                  style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid #3f3f46", background: "transparent", color: "#a1a1aa", fontSize: 13, textDecoration: "none", display: "inline-block" }}
-                >
+                <a href={`https://github.com/Hamlet-Tamaz/naran-english-translation-pipeline/tree/main/processed/${v.filename.replace(".mp4", "")}`} target="_blank" rel="noopener" style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid #3f3f46", background: "transparent", color: "#a1a1aa", fontSize: 13, textDecoration: "none", display: "inline-block" }}>
                   Files
                 </a>
               </div>
@@ -331,7 +344,6 @@ export default function Dashboard() {
         )}
       </Section>
 
-      {/* Video Preview Modal */}
       {previewVideo && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 24 }} onClick={() => setPreviewVideo(null)}>
           <div style={{ maxWidth: 700, width: "100%", background: "#18181b", borderRadius: 12, overflow: "hidden", border: "1px solid #27272a" }} onClick={e => e.stopPropagation()}>
@@ -347,7 +359,7 @@ export default function Dashboard() {
                 <a href={previewVideo} download style={{ padding: "8px 16px", borderRadius: 6, border: "none", background: "#3b82f6", color: "#fff", fontSize: 13, fontWeight: 500, textDecoration: "none", display: "inline-block" }}>
                   ⬇ Download Video
                 </a>
-                <button onClick={() => { navigator.clipboard.writeText(previewCaption); setMessage("Caption copied!"); }} style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid #3f3f46", background: "transparent", color: "#a1a1aa", fontSize: 13, cursor: "pointer" }}>
+                <button onClick={() => { navigator.clipboard.writeText(previewCaption); setMessage("✅ Caption copied!"); }} style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid #3f3f46", background: "transparent", color: "#a1a1aa", fontSize: 13, cursor: "pointer" }}>
                   📋 Copy Caption
                 </button>
               </div>
