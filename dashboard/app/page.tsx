@@ -24,6 +24,8 @@ export default function Dashboard() {
   const [isDragging, setIsDragging] = useState(false);
   const [envStatus, setEnvStatus] = useState<EnvStatus | null>(null);
   const [checkingEnv, setCheckingEnv] = useState(true);
+  const [previewVideo, setPreviewVideo] = useState<string | null>(null);
+  const [previewCaption, setPreviewCaption] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -165,6 +167,22 @@ export default function Dashboard() {
     }
   }
 
+  async function openPreview(filename: string) {
+    const videoId = filename.replace(".mp4", "");
+    const videoUrl = `https://raw.githubusercontent.com/Hamlet-Tamaz/naran-english-translation-pipeline/main/processed/${videoId}/final.mp4`;
+
+    // Fetch caption
+    try {
+      const res = await fetch(`https://raw.githubusercontent.com/Hamlet-Tamaz/naran-english-translation-pipeline/main/processed/${videoId}/caption.txt`);
+      const caption = await res.text();
+      setPreviewCaption(caption);
+    } catch (e) {
+      setPreviewCaption("");
+    }
+
+    setPreviewVideo(videoUrl);
+  }
+
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
@@ -206,11 +224,6 @@ export default function Dashboard() {
           {!githubReady && (
             <div style={{ marginTop: 10, fontSize: 12, color: "#f87171" }}>
               Add GITHUB_TOKEN to Vercel Environment Variables and redeploy.
-            </div>
-          )}
-          {githubReady && !r2Ready && (
-            <div style={{ marginTop: 10, fontSize: 12, color: "#a1a1aa" }}>
-              Direct upload active (max ~4.5MB). Add R2 credentials for unlimited file sizes.
             </div>
           )}
         </div>
@@ -278,11 +291,48 @@ export default function Dashboard() {
         ) : (
           completed.map(v => (
             <VideoRow key={v.filename} video={v}>
-              <a href={`https://github.com/Hamlet-Tamaz/naran-english-translation-pipeline/tree/main/processed/${v.filename.replace(".mp4", "")}`} target="_blank" rel="noopener" style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid #3f3f46", background: "transparent", color: "#a1a1aa", fontSize: 13, textDecoration: "none", display: "inline-block" }}>View Output</a>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => openPreview(v.filename)} style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid #3b82f6", background: "transparent", color: "#3b82f6", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
+                  ▶ Watch
+                </button>
+                <a
+                  href={`https://github.com/Hamlet-Tamaz/naran-english-translation-pipeline/tree/main/processed/${v.filename.replace(".mp4", "")}`}
+                  target="_blank"
+                  rel="noopener"
+                  style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid #3f3f46", background: "transparent", color: "#a1a1aa", fontSize: 13, textDecoration: "none", display: "inline-block" }}
+                >
+                  Files
+                </a>
+              </div>
             </VideoRow>
           ))
         )}
       </Section>
+
+      {/* Video Preview Modal */}
+      {previewVideo && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 24 }} onClick={() => setPreviewVideo(null)}>
+          <div style={{ maxWidth: 700, width: "100%", background: "#18181b", borderRadius: 12, overflow: "hidden", border: "1px solid #27272a" }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding: "16px 20px", borderBottom: "1px solid #27272a", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: 15, fontWeight: 500, color: "#fafafa" }}>Preview</span>
+              <button onClick={() => setPreviewVideo(null)} style={{ background: "none", border: "none", color: "#a1a1aa", fontSize: 20, cursor: "pointer" }}>×</button>
+            </div>
+            <video controls style={{ width: "100%", display: "block" }} src={previewVideo} />
+            <div style={{ padding: "16px 20px", borderTop: "1px solid #27272a" }}>
+              <div style={{ fontSize: 12, color: "#a1a1aa", marginBottom: 8 }}>Caption</div>
+              <pre style={{ margin: 0, fontSize: 12, color: "#d4d4d8", whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 120, overflow: "auto" }}>{previewCaption}</pre>
+              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                <a href={previewVideo} download style={{ padding: "8px 16px", borderRadius: 6, border: "none", background: "#3b82f6", color: "#fff", fontSize: 13, fontWeight: 500, textDecoration: "none", display: "inline-block" }}>
+                  ⬇ Download Video
+                </a>
+                <button onClick={() => { navigator.clipboard.writeText(previewCaption); setMessage("Caption copied!"); }} style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid #3f3f46", background: "transparent", color: "#a1a1aa", fontSize: 13, cursor: "pointer" }}>
+                  📋 Copy Caption
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
