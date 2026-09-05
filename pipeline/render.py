@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from extract import extract_audio
 from transcribe import transcribe
-from translate import translate
+from translate_hardened import translate_hardened
 from voiceover import generate as gen_voiceover
 from subtitle import burn
 from caption import generate as gen_caption
@@ -49,26 +49,19 @@ def main():
     print("  [2/6] Transcribing Russian...")
     transcript = transcribe(audio, out_dir)
 
-    print("  [3/6] Translating to English (GPT-4o + speaker detection)...")
-    translation = translate(transcript, out_dir)
+    print("  [3/6] Hardened translation (GPT-4o + GPT-4o-mini + back-check)...")
+    translation = translate_hardened(transcript, out_dir)
 
-    print("  [4/6] Running alternative speaker detection...")
-    # Pause heuristic (always runs)
+    print("  [4/6] Running speaker diarization...")
     pause_diarization = pause_heuristic_diarization(transcript)
-
-    # pyannote.audio (if HF_TOKEN available)
     pyannote_diarization = diarize_audio(audio, out_dir)
-
-    # Compare methods
     comparison = compare_methods(
         translation.get("segments", []),
         pyannote_diarization,
         pause_diarization
     )
-    comp_path = os.path.join(out_dir, "speaker_comparison.json")
-    with open(comp_path, "w", encoding="utf-8") as f:
+    with open(os.path.join(out_dir, "speaker_comparison.json"), "w", encoding="utf-8") as f:
         json.dump(comparison, f, ensure_ascii=False, indent=2)
-    print(f"  Speaker comparison saved: {comp_path}")
 
     print("  [5/6] Generating voiceover...")
     voiceover_path, voiceover_duration = gen_voiceover(translation, out_dir)
@@ -79,7 +72,6 @@ def main():
     print("  Generating caption...")
     gen_caption(translation, out_dir)
 
-    # Update versions.json
     versions_file = os.path.join(base_dir, "versions.json")
     versions_data = {"versions": []}
     if os.path.exists(versions_file):
@@ -89,9 +81,10 @@ def main():
     versions_data["versions"].append({
         "number": version,
         "folder": f"v{version}",
-        "created_at": "auto",  # GitHub Actions will set this
+        "created_at": "auto",
         "speakers_found": sorted(list(set(s.get("speaker", "Naran") for s in translation.get("segments", [])))),
-        "voiceover_duration": voiceover_duration
+        "voiceover_duration": voiceover_duration,
+        "back_translation_score": translation.get("back_translation_score", 0)
     })
 
     with open(versions_file, "w") as f:
@@ -104,6 +97,7 @@ def main():
         "output_dir": out_dir,
         "final_video": final,
         "voiceover_duration": voiceover_duration,
+        "back_translation_score": translation.get("back_translation_score", 0),
         "status": "completed"
     }
     with open(os.path.join(out_dir, "metadata.json"), "w") as f:
