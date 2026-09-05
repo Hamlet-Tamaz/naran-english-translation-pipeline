@@ -3,90 +3,132 @@ import os
 import srt
 from datetime import timedelta
 
+def wrap_text(text: str, max_line_len: int = 32, max_lines: int = 2) -> str:
+    """Wrap text into lines of max_line_len chars, max max_lines lines."""
+    words = text.split()
+    lines = []
+    current_line = ""
+
+    for word in words:
+        if len(current_line) + len(word) + 1 <= max_line_len:
+            current_line = (current_line + " " + word).strip()
+        else:
+            if current_line:
+                lines.append(current_line)
+            current_line = word
+            if len(lines) >= max_lines - 1:
+                # Only allow one more line, then truncate with ellipsis
+                break
+
+    if current_line and len(lines) < max_lines:
+        lines.append(current_line)
+
+    # If we broke early due to length, append ellipsis to last line
+    if len(lines) >= max_lines and current_line and current_line not in lines:
+        lines[-1] = lines[-1].rstrip(".") + "..."
+
+    return "\n".join(lines)
+
 def generate_srt(translation, output_dir):
+    """Generate a properly wrapped SRT file."""
     subs = []
     for i, seg in enumerate(translation["segments"], 1):
         start = timedelta(seconds=seg["start"])
         end = timedelta(seconds=seg["end"])
-        subs.append(srt.Subtitle(index=i, start=start, end=end, content=seg["text"].strip()))
+        wrapped = wrap_text(seg["text"].strip())
+        if wrapped:
+            subs.append(srt.Subtitle(index=i, start=start, end=end, content=wrapped))
+
     srt_path = os.path.join(output_dir, "subtitles.srt")
     with open(srt_path, "w", encoding="utf-8") as f:
         f.write(srt.compose(subs))
     return srt_path
 
-def escape_for_drawtext(text):
-    """Escape text for ffmpeg drawtext filter."""
-    # Remove/replace problematic characters
-    text = text.replace("\\", "\\\\")
-    text = text.replace("'", "\\'")
-    text = text.replace(":", "\\:")
-    text = text.replace("=", "\\=")
-    text = text.replace("%", "\\%")
-    text = text.replace("[", "\\[")
-    text = text.replace("]", "\\]")
-    text = text.replace(",", "\\,")
-    text = text.replace(";", "\\;")
-    # Remove any other non-printable or problematic chars
-    text = "".join(c for c in text if c.isprintable() or c.isspace())
-    return text.strip()
+def get_video_dimensions(video_path: str) -> tuple:
+    """Get video width and height using ffprobe."""
+    cmd = [
+        "ffprobe", "-v", "error",
+        "-select_streams", "v:0",
+        "-show_entries", "stream=width,height",
+        "-of", "csv=s=x:p=0",
+        video_path
+    ]
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        w, h = result.stdout.strip().split("x")
+        return int(w), int(h)
+    except Exception:
+        return 1080, 1920  # Default to typical vertical video
 
 def burn(video_path, translation, voiceover_path, output_dir):
     out_path = os.path.join(output_dir, "final.mp4")
 
-    # Build drawtext filters
-    filters = []
-    for seg in translation["segments"]:
-        start, end = seg["start"], seg["end"]
-        text = escape_for_drawtext(seg["text"])
-        if not text:
-            continue
+    # Generate clean SRT with wrapped text
+    srt_path = generate_srt(translation, output_dir)
 
-        # Break long lines
-        if len(text) > 50:
-            words = text.split()
-            mid = len(words) // 2
-            text = "\\n".join([" ".join(words[:mid]), " ".join(words[mid:])])
+    # Get video dimensions to calculate relative font size
+    width, height = get_video_dimensions(video_path)
 
-        filter_str = (
-            f"drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:"
-            f"text='{text}':fontcolor=white:fontsize=28:"
-            f"borderw=2:bordercolor=black:"
-            f"x=(w-text_w)/2:y=h*0.82:"
-            f"enable='between(t\\,{start}\\,{end})'"
-        )
-        filters.append(filter_str)
+    # Calculate font size: ~5% of video height, min 20, max 36
+    font_size = max(20, min(36, int(height * 0.048)))
 
-    if not filters:
-        # No valid subtitles, just merge video + voiceover
-        cmd = [
-            "ffmpeg", "-y", "-i", video_path, "-i", voiceover_path,
-            "-map", "0:v:0", "-map", "1:a:0",
-            "-c:v", "libx264", "-preset", "fast", "-crf", "23",
-            "-c:a", "aac", "-b:a", "192k", "-shortest", out_path
-        ]
-    else:
-        vf = ",".join(filters)
-        cmd = [
-            "ffmpeg", "-y", "-i", video_path, "-i", voiceover_path,
-            "-vf", vf, "-map", "0:v:0", "-map", "1:a:0",
-            "-c:v", "libx264", "-preset", "fast", "-crf", "23",
-            "-c:a", "aac", "-b:a", "192k", "-shortest", out_path
-        ]
+    # Margin from bottom: ~8% of height
+    margin_v = max(30, int(height * 0.08))
+
+    # Build subtitle style string for ffmpeg force_style
+    # Alignment: 2 = bottom center
+    # MarginV: vertical margin from bottom edge
+    # Outline + Shadow for readability
+    style = (
+        f"FontName=DejaVu Sans,"
+        f"FontSize={font_size},"
+        f"PrimaryColour=&H00FFFFFF,"
+        f"OutlineColour=&H00000000,"
+        f"Outline=2,"
+        f"Shadow=0,"
+        f"Alignment=2,"
+        f"MarginV={margin_v},"
+        f"MarginL=40,"
+        f"MarginR=40,"
+        f"WrapStyle=0,"
+        f"BorderStyle=1"
+    )
+
+    cmd = [
+        "ffmpeg", "-y",
+        "-i", video_path,
+        "-i", voiceover_path,
+        "-vf", f"subtitles={srt_path}:force_style='{style}'",
+        "-map", "0:v:0",
+        "-map", "1:a:0",
+        "-c:v", "libx264", "-preset", "fast", "-crf", "23",
+        "-c:a", "aac", "-b:a", "192k",
+        "-shortest",
+        out_path
+    ]
 
     try:
         subprocess.run(cmd, check=True, capture_output=True)
+        print(f"  Subtitles burned successfully: {out_path}")
     except subprocess.CalledProcessError as e:
-        print(f"  ffmpeg drawtext failed, trying subtitle overlay fallback...")
-        # Fallback: use SRT subtitle file instead of drawtext
-        srt_path = generate_srt(translation, output_dir)
+        print(f"  ffmpeg subtitle burn failed: {e}")
+        print(f"  stderr: {e.stderr.decode() if e.stderr else 'N/A'}")
+        # Fallback: just merge video + voiceover without subtitles
         cmd_fallback = [
-            "ffmpeg", "-y", "-i", video_path, "-i", voiceover_path,
-            "-vf", f"subtitles={srt_path}:force_style='FontName=DejaVu Sans,FontSize=28,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2,Shadow=0,Alignment=2,MarginV=50'",
+            "ffmpeg", "-y",
+            "-i", video_path,
+            "-i", voiceover_path,
             "-map", "0:v:0", "-map", "1:a:0",
             "-c:v", "libx264", "-preset", "fast", "-crf", "23",
-            "-c:a", "aac", "-b:a", "192k", "-shortest", out_path
+            "-c:a", "aac", "-b:a", "192k",
+            "-shortest",
+            out_path
         ]
         subprocess.run(cmd_fallback, check=True, capture_output=True)
-        os.remove(srt_path)
+        print(f"  Fallback: video + voiceover only (no subtitles)")
+    finally:
+        # Clean up SRT file
+        if os.path.exists(srt_path):
+            os.remove(srt_path)
 
     return out_path
