@@ -204,6 +204,7 @@ export default function Dashboard() {
   const processing = videos.filter(v => v.status === "processing");
 
   const githubReady = envStatus?.github_ready ?? false;
+  const openaiReady = envStatus?.openai_ready ?? false;
   const r2Ready = envStatus?.r2_ready ?? false;
   const canUpload = githubReady;
 
