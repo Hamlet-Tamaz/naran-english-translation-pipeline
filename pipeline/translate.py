@@ -3,25 +3,27 @@ import json
 import time
 
 def translate(transcript: dict, output_dir: str) -> dict:
-    """Translate Russian transcript to English. Primary: OpenAI. Fallback: Google Translate."""
     segments_en = []
-
-    # Primary: OpenAI GPT-4o-mini
     openai_key = os.environ.get("OPENAI_API_KEY")
+
     if openai_key:
         try:
-            segments_en = openai_translate(transcript, openai_key)
-            print("  Translation: OpenAI GPT-4o-mini")
+            segments_en = openai_translate_with_speakers(transcript, openai_key)
+            print("  Translation: OpenAI GPT-4o-mini + speaker detection")
         except Exception as e:
-            print(f"  OpenAI failed ({e}), falling back to Google Translate...")
-            segments_en = []
+            print(f"  OpenAI speaker detection failed ({e}), using simple translation...")
+            try:
+                segments_en = openai_translate_simple(transcript, openai_key)
+                print("  Translation: OpenAI GPT-4o-mini (no speakers)")
+            except Exception as e2:
+                print(f"  OpenAI simple also failed ({e2}), falling back to Google...")
+                segments_en = []
     else:
         print("  OPENAI_API_KEY not set, falling back to Google Translate...")
 
-    # Fallback: Google Translate
     if not segments_en:
         segments_en = google_translate_fallback(transcript)
-        print("  Translation: Google Translate (fallback)")
+        print("  Translation: Google Translate (fallback, no speakers)")
 
     full_text = " ".join(s["text"] for s in segments_en)
     result = {"full_text": full_text, "segments": segments_en}
@@ -31,8 +33,67 @@ def translate(transcript: dict, output_dir: str) -> dict:
         json.dump(result, f, ensure_ascii=False, indent=2)
     return result
 
-def openai_translate(transcript: dict, api_key: str) -> list:
-    """Translate using OpenAI GPT-4o-mini."""
+def openai_translate_with_speakers(transcript: dict, api_key: str) -> list:
+    from openai import OpenAI
+    client = OpenAI(api_key=api_key)
+
+    ru_segments = []
+    for seg in transcript.get("segments", []):
+        if seg["text"].strip():
+            ru_segments.append({
+                "start": seg["start"],
+                "end": seg["end"],
+                "text": seg["text"].strip()
+            })
+
+    prompt = f"""You are analyzing a Russian transcript from an educational video. The host (Naran Hangai) discusses historical claims about Armenia, often quoting or responding to other people's arguments.
+
+Here is the transcript divided into timed segments:
+{json.dumps(ru_segments, ensure_ascii=False, indent=2)}
+
+Your task:
+1. For each segment, identify the speaker: "Naran" (the host) or "Other" (people he quotes/responds to)
+2. Translate each segment to natural, conversational English
+3. Return a JSON object with this exact structure:
+{{
+  "segments": [
+    {{"speaker": "Naran", "text": "English translation", "start": 0.0, "end": 5.2}},
+    ...
+  ]
+}}
+
+Guidelines:
+- Naran usually introduces topics, gives commentary, says "they tell us", "let's check", "I found", "now let's see"
+- Other speakers are quoted with phrases like "some say", "they claim", or represent opposing views Naran is debunking
+- If uncertain, label as "Naran"
+- Preserve all content — don't skip any text
+- Make the English natural and conversational
+- Keep segments roughly the same length and timing as the original"""
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are a precise translator and transcript editor. Always respond with valid JSON only."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.3,
+        max_tokens=3000,
+        response_format={"type": "json_object"}
+    )
+
+    result = json.loads(response.choices[0].message.content.strip())
+    segments = result.get("segments", [])
+
+    original_count = len(ru_segments)
+    if len(segments) < original_count * 0.3 or len(segments) > original_count * 3:
+        raise ValueError(f"Segment count mismatch: got {len(segments)}, expected ~{original_count}")
+
+    for seg in segments:
+        seg.setdefault("speaker", "Naran")
+
+    return segments
+
+def openai_translate_simple(transcript: dict, api_key: str) -> list:
     from openai import OpenAI
     client = OpenAI(api_key=api_key)
 
@@ -49,13 +110,8 @@ def openai_translate(transcript: dict, api_key: str) -> list:
     )
     translated_full = response.choices[0].message.content.strip()
 
-    return split_into_segments(translated_full, transcript)
-
-def split_into_segments(translated_full: str, transcript: dict) -> list:
-    """Split translated text into segments matching original timing."""
     ru_segments = [seg for seg in transcript.get("segments", []) if seg["text"].strip()]
     total_ru_words = sum(len(seg["text"].split()) for seg in ru_segments)
-
     en_words = translated_full.split()
     segments_en = []
     word_idx = 0
@@ -64,14 +120,13 @@ def split_into_segments(translated_full: str, transcript: dict) -> list:
         seg_ru_words = len(seg["text"].split())
         ratio = seg_ru_words / total_ru_words if total_ru_words > 0 else 1 / len(ru_segments)
         en_word_count = max(1, round(len(en_words) * ratio))
-
         seg_en_words = en_words[word_idx:word_idx + en_word_count]
         word_idx += en_word_count
-
         segments_en.append({
             "start": seg["start"],
             "end": seg["end"],
-            "text": " ".join(seg_en_words)
+            "text": " ".join(seg_en_words),
+            "speaker": "Naran"
         })
 
     if word_idx < len(en_words) and segments_en:
@@ -80,7 +135,6 @@ def split_into_segments(translated_full: str, transcript: dict) -> list:
     return segments_en
 
 def google_translate_fallback(transcript: dict) -> list:
-    """Fallback to Google Translate."""
     from deep_translator import GoogleTranslator
     translator = GoogleTranslator(source="ru", target="en")
     segments_en = []
@@ -92,6 +146,11 @@ def google_translate_fallback(transcript: dict) -> list:
             translated = translator.translate(txt)
         except Exception:
             translated = txt
-        segments_en.append({"start": seg["start"], "end": seg["end"], "text": translated})
+        segments_en.append({
+            "start": seg["start"],
+            "end": seg["end"],
+            "text": translated,
+            "speaker": "Naran"
+        })
         time.sleep(0.3)
     return segments_en
