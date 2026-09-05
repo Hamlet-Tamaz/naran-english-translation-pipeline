@@ -8,6 +8,8 @@ VOICE_MAP = {
     "Commenter": "fable",
 }
 
+GAP_MS = 300  # 0.3s gap between speaker segments
+
 def generate_for_speaker(text: str, speaker: str, output_path: str, api_key: str):
     from openai import OpenAI
     client = OpenAI(api_key=api_key)
@@ -41,8 +43,9 @@ def generate(translation: dict, output_dir: str) -> tuple:
     if not segments:
         raise RuntimeError("No segments to voice.")
 
-    # Calculate total duration needed
-    total_duration_ms = int(max(seg["end"] for seg in segments) * 1000) + 3000
+    # Calculate total duration with gaps
+    last_end = max(seg["end"] for seg in segments)
+    total_duration_ms = int(last_end * 1000) + 5000
     base_audio = AudioSegment.silent(duration=total_duration_ms)
 
     for i, seg in enumerate(segments):
@@ -57,23 +60,24 @@ def generate(translation: dict, output_dir: str) -> tuple:
         segment_audio = AudioSegment.from_mp3(seg_path)
         position_ms = int(seg["start"] * 1000)
 
-        # Calculate allocated time window (until next segment starts)
+        # Calculate end of allocated window (next segment start - gap)
         if i < len(segments) - 1:
-            next_start = segments[i + 1]["start"]
-            allocated_ms = int((next_start - seg["start"]) * 1000)
+            next_start_ms = int(segments[i + 1]["start"] * 1000)
+            allocated_end_ms = next_start_ms - GAP_MS
+            allocated_ms = allocated_end_ms - position_ms
         else:
-            allocated_ms = 999999  # Last segment gets rest of time
+            allocated_ms = 999999  # Last segment
 
-        # Trim if TTS is longer than allocated window (prevent overlap)
-        if len(segment_audio) > allocated_ms and allocated_ms > 500:
-            segment_audio = segment_audio[:allocated_ms]
-            print(f"  [{speaker}] trimmed {len(segment_audio)/1000:.2f}s → {allocated_ms/1000:.2f}s (overlap prevention)")
+        # Trim if TTS exceeds allocated window minus gap
+        if len(segment_audio) > allocated_ms and allocated_ms > 800:
+            segment_audio = segment_audio[:int(allocated_ms)]
+            print(f"  [{speaker}] trimmed to {len(segment_audio)/1000:.2f}s (gap: {GAP_MS}ms)")
 
         base_audio = base_audio.overlay(segment_audio, position=position_ms)
         os.remove(seg_path)
-        print(f"  [{speaker}] {text[:45]}... → placed @ {seg['start']:.1f}s")
+        print(f"  [{speaker}] {text[:45]}... @ {seg['start']:.1f}s ({len(segment_audio)/1000:.2f}s)")
 
     base_audio.export(path, format="mp3", bitrate="192k")
     total_duration = get_audio_duration(path)
-    print(f"  Voiceover: {total_duration:.2f}s, no overlaps")
+    print(f"  Voiceover: {total_duration:.2f}s, {GAP_MS}ms gaps between speakers")
     return path, total_duration
