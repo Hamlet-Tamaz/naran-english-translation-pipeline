@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 interface QueueVideo {
   filename: string;
@@ -12,6 +12,9 @@ export default function Dashboard() {
   const [videos, setVideos] = useState<QueueVideo[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchQueue();
@@ -46,6 +49,65 @@ export default function Dashboard() {
     setLoading(false);
   }
 
+  async function uploadFile(file: File) {
+    if (file.size > 100 * 1024 * 1024) {
+      setMessage("Error: File too large. Max 100MB for direct upload. Use Git LFS for larger files.");
+      return;
+    }
+
+    setUploadProgress(0);
+    setMessage(`Uploading ${file.name}...`);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setMessage(`Uploaded ${file.name}! It will appear in Pending shortly.`);
+        setUploadProgress(100);
+        fetchQueue();
+      } else {
+        setMessage(`Error: ${data.message || "Upload failed"}`);
+        setUploadProgress(0);
+      }
+    } catch (e) {
+      setMessage("Error uploading file. Check console.");
+      setUploadProgress(0);
+    }
+  }
+
+  const onDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith("video/")) {
+      uploadFile(file);
+    } else {
+      setMessage("Error: Please drop a video file (MP4, MOV, etc.)");
+    }
+  }, []);
+
+  const onDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const onDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
+
+  const onFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) uploadFile(file);
+  };
+
   const pending = videos.filter(v => v.status === "pending_approval");
   const completed = videos.filter(v => v.status === "completed");
   const processing = videos.filter(v => v.status === "processing");
@@ -71,6 +133,55 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Upload Drop Zone */}
+      <div
+        onDrop={onDrop}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onClick={() => fileInputRef.current?.click()}
+        style={{
+          padding: "40px 24px",
+          borderRadius: 12,
+          border: `2px dashed ${isDragging ? "#3b82f6" : "#3f3f46"}`,
+          background: isDragging ? "rgba(59,130,246,0.08)" : "rgba(255,255,255,0.02)",
+          textAlign: "center",
+          cursor: "pointer",
+          transition: "all 0.2s ease",
+          marginBottom: 32,
+        }}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="video/*"
+          onChange={onFileSelect}
+          style={{ display: "none" }}
+        />
+        <div style={{ fontSize: 32, marginBottom: 8 }}>📤</div>
+        <div style={{ fontSize: 15, fontWeight: 500, color: "#d4d4d8" }}>
+          Drop a video here, or click to browse
+        </div>
+        <div style={{ fontSize: 12, color: "#71717a", marginTop: 6 }}>
+          MP4, MOV, AVI — up to 100MB
+        </div>
+        {uploadProgress > 0 && uploadProgress < 100 && (
+          <div style={{ marginTop: 16 }}>
+            <div style={{
+              height: 4, borderRadius: 2, background: "#27272a", overflow: "hidden"
+            }}>
+              <div style={{
+                height: "100%", width: `${uploadProgress}%`,
+                background: "#3b82f6", borderRadius: 2,
+                transition: "width 0.3s ease"
+              }} />
+            </div>
+            <div style={{ fontSize: 11, color: "#71717a", marginTop: 4 }}>
+              Uploading...
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 32 }}>
         <StatCard label="Pending" value={pending.length} color="#f59e0b" />
@@ -81,7 +192,7 @@ export default function Dashboard() {
       {/* Pending */}
       <Section title="Pending Approval" count={pending.length}>
         {pending.length === 0 ? (
-          <EmptyState text="No videos waiting. Upload one to incoming/ folder." />
+          <EmptyState text="No videos waiting. Upload one above." />
         ) : (
           pending.map(v => (
             <VideoRow key={v.filename} video={v}>
@@ -125,23 +236,6 @@ export default function Dashboard() {
           ))
         )}
       </Section>
-
-      {/* Upload instructions */}
-      <div style={{
-        marginTop: 32, padding: 16, borderRadius: 10,
-        border: "1px dashed #3f3f46", background: "rgba(255,255,255,0.02)"
-      }}>
-        <h3 style={{ fontSize: 14, fontWeight: 500, margin: "0 0 8px", color: "#d4d4d8" }}>
-          How to upload a video
-        </h3>
-        <ol style={{ margin: 0, paddingLeft: 18, color: "#a1a1aa", fontSize: 13, lineHeight: 1.8 }}>
-          <li>Go to the repo on GitHub</li>
-          <li>Navigate to the <code style={{ background: "#27272a", padding: "2px 6px", borderRadius: 4 }}>incoming/</code> folder</li>
-          <li>Click "Add file" → "Upload files"</li>
-          <li>Commit the video</li>
-          <li>Return here — it will appear in Pending within 15 min (or refresh)</li>
-        </ol>
-      </div>
     </div>
   );
 }
