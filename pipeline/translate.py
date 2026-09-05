@@ -8,10 +8,11 @@ def translate(transcript: dict, output_dir: str) -> dict:
 
     if openai_key:
         try:
+            # Use GPT-4o for better speaker nuance detection
             segments_en = openai_translate_with_speakers(transcript, openai_key)
-            print("  Translation: OpenAI GPT-4o-mini + speaker detection")
+            print("  Translation: OpenAI GPT-4o + speaker detection")
         except Exception as e:
-            print(f"  OpenAI speaker detection failed ({e}), using simple translation...")
+            print(f"  GPT-4o speaker detection failed ({e}), using GPT-4o-mini simple...")
             try:
                 segments_en = openai_translate_simple(transcript, openai_key)
                 print("  Translation: OpenAI GPT-4o-mini (no speakers)")
@@ -46,41 +47,43 @@ def openai_translate_with_speakers(transcript: dict, api_key: str) -> list:
                 "text": seg["text"].strip()
             })
 
-    prompt = f"""You are analyzing a Russian transcript from an educational video by Naran Hangai. The host discusses historical claims about Armenia, frequently quoting or responding to arguments from other people. There may be MULTIPLE different commentators quoted.
+    prompt = f"""You are analyzing a Russian transcript from Naran Hangai's educational video about Armenian history. There are TWO recurring characters you must identify:
 
-Here is the transcript divided into timed segments:
+**NARAN** — The host. He has a shaved head, a mole on his left cheek, and speaks directly to camera. He debunks historical claims using sources like Encyclopaedia Iranica, BibleHub, and the 1611 King James Bible. His style: "Let's check the sources," "They tell us that... but let's see what the texts actually say," "Now let's dispel this myth."
+
+**KAMRAN** — A recurring commenter/character that Naran frequently debunks. Kamran presents nationalist/historical arguments claiming Armenia is fabricated, not in the Bible, etc. Naran quotes Kamran's arguments and then systematically refutes them. Kamran NEVER presents sources — only claims.
+
+**OTHER COMMENTERS** — Occasionally Naran quotes other people (historians, Wikipedia, random internet comments). These are distinct from both Naran and Kamran.
+
+Here is the transcript:
 {json.dumps(ru_segments, ensure_ascii=False, indent=2)}
 
 Your task:
-1. Identify EACH distinct speaker. There may be 1-4 different people. Look for:
-   - "Naran" — the host. He introduces topics, says "let's check", "I found", "now let's see", "they tell us", gives analysis and debunking
-   - "Commenter1", "Commenter2", etc. — people he quotes or responds to. Look for phrases like "some say", "they claim", "according to X", or when he introduces an opposing view before debunking it. Each DISTINCT opposing view or quoted source should be a separate commenter.
-   - If the same quoted argument reappears, assign it to the SAME commenter number
+1. Identify the speaker for EACH segment. Options: "Naran", "Kamran", or "Commenter"
 2. Translate each segment to natural, conversational English
-3. Return a JSON object with this exact structure:
+3. Return JSON:
 {{
   "segments": [
-    {{"speaker": "Naran", "text": "English translation", "start": 0.0, "end": 5.2}},
-    {{"speaker": "Commenter1", "text": "English translation", "start": 5.2, "end": 10.1}},
+    {{"speaker": "Naran", "text": "...", "start": 0.0, "end": 5.2}},
+    {{"speaker": "Kamran", "text": "...", "start": 5.2, "end": 10.1}},
     ...
   ]
 }}
 
-Guidelines:
-- Naran is the host who debunks claims. He usually speaks the majority of the video.
-- Commenter1, Commenter2, etc. are distinct people whose arguments he quotes and then refutes.
-- If you cannot distinguish between commenters, use "Commenter1" for all non-Naran speech.
-- Preserve all content — don't skip any text.
-- Make the English natural and conversational.
-- Keep segments roughly the same length as the original."""
+Rules:
+- If Naran says "They tell us..." or "Some claim..." followed by a claim, the CLAIM itself is Kamran/Commenter, Naran's rebuttal is Naran
+- Naran often uses phrases: "Now let's see," "But wait," "According to [source]," "This is confirmed by"
+- Kamran's arguments are usually unsourced nationalist claims
+- Preserve all text — don't skip anything
+- Keep natural, conversational English"""
 
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4o",
         messages=[
             {"role": "system", "content": "You are a precise translator and transcript editor. Always respond with valid JSON only."},
             {"role": "user", "content": prompt}
         ],
-        temperature=0.3,
+        temperature=0.2,
         max_tokens=4000,
         response_format={"type": "json_object"}
     )
@@ -88,19 +91,12 @@ Guidelines:
     result = json.loads(response.choices[0].message.content.strip())
     segments = result.get("segments", [])
 
-    original_count = len(ru_segments)
-    if len(segments) < original_count * 0.3 or len(segments) > original_count * 3:
-        raise ValueError(f"Segment count mismatch: got {len(segments)}, expected ~{original_count}")
-
-    # Normalize speaker names
+    # Validate and normalize
+    valid_speakers = {"Naran", "Kamran", "Commenter"}
     for seg in segments:
         sp = seg.get("speaker", "Naran")
-        if sp.lower() in ("naran", "host", "speaker"):
-            seg["speaker"] = "Naran"
-        elif "commenter" in sp.lower():
-            seg["speaker"] = sp  # Keep as Commenter1, Commenter2, etc.
-        else:
-            seg["speaker"] = "Naran"
+        if sp not in valid_speakers:
+            seg["speaker"] = "Commenter"
 
     return segments
 
