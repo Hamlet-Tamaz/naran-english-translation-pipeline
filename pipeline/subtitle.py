@@ -1,51 +1,7 @@
 import subprocess
 import os
-import srt
-from datetime import timedelta
-
-def wrap_text(text: str, max_line_len: int = 32, max_lines: int = 2) -> str:
-    """Wrap text into lines of max_line_len chars, max max_lines lines."""
-    words = text.split()
-    lines = []
-    current_line = ""
-
-    for word in words:
-        if len(current_line) + len(word) + 1 <= max_line_len:
-            current_line = (current_line + " " + word).strip()
-        else:
-            if current_line:
-                lines.append(current_line)
-            current_line = word
-            if len(lines) >= max_lines - 1:
-                # Only allow one more line, then truncate with ellipsis
-                break
-
-    if current_line and len(lines) < max_lines:
-        lines.append(current_line)
-
-    # If we broke early due to length, append ellipsis to last line
-    if len(lines) >= max_lines and current_line and current_line not in lines:
-        lines[-1] = lines[-1].rstrip(".") + "..."
-
-    return "\n".join(lines)
-
-def generate_srt(translation, output_dir):
-    """Generate a properly wrapped SRT file."""
-    subs = []
-    for i, seg in enumerate(translation["segments"], 1):
-        start = timedelta(seconds=seg["start"])
-        end = timedelta(seconds=seg["end"])
-        wrapped = wrap_text(seg["text"].strip())
-        if wrapped:
-            subs.append(srt.Subtitle(index=i, start=start, end=end, content=wrapped))
-
-    srt_path = os.path.join(output_dir, "subtitles.srt")
-    with open(srt_path, "w", encoding="utf-8") as f:
-        f.write(srt.compose(subs))
-    return srt_path
 
 def get_video_dimensions(video_path: str) -> tuple:
-    """Get video width and height using ffprobe."""
     cmd = [
         "ffprobe", "-v", "error",
         "-select_streams", "v:0",
@@ -58,47 +14,85 @@ def get_video_dimensions(video_path: str) -> tuple:
         w, h = result.stdout.strip().split("x")
         return int(w), int(h)
     except Exception:
-        return 1080, 1920  # Default to typical vertical video
+        return 1080, 1920
+
+def format_ass_time(seconds: float) -> str:
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    secs = int(seconds % 60)
+    centis = int((seconds - int(seconds)) * 100)
+    return f"{hours}:{minutes:02d}:{secs:02d}.{centis:02d}"
+
+def build_ass(translation, output_dir, video_width, video_height):
+    font_size = max(26, min(40, int(video_height * 0.02)))
+    margin_v = max(100, int(video_height * 0.10))
+    margin_lr = max(40, int(video_width * 0.05))
+
+    header = f"""[Script Info]
+Title: Naran Pipeline Subtitles
+ScriptType: v4.00+
+WrapStyle: 0
+ScaledBorderAndShadow: yes
+YCbCr Matrix: TV.709
+PlayResX: {video_width}
+PlayResY: {video_height}
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Naran,DejaVu Sans,{font_size},&H00FFFFFF,&H00808080,&H00000000,&H90000000,-1,0,0,0,100,100,0,0,3,2,0,2,{margin_lr},{margin_lr},{margin_v},1
+Style: Other,DejaVu Sans,{font_size},&H0000FFFF,&H00808080,&H00000000,&H90000000,-1,0,0,0,100,100,0,0,3,2,0,2,{margin_lr},{margin_lr},{margin_v},1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+"""
+
+    dialogues = []
+    for seg in translation.get("segments", []):
+        start = seg["start"]
+        end = seg["end"]
+        text = seg.get("text", "").strip()
+        speaker = seg.get("speaker", "Naran")
+
+        if not text:
+            continue
+
+        style = "Naran" if speaker == "Naran" else "Other"
+
+        words = text.split()
+        if len(words) > 1:
+            duration = end - start
+            word_duration = duration / len(words)
+            karaoke_parts = []
+            for word in words:
+                cs = max(1, int(word_duration * 100))
+                safe_word = word.replace("{", "\{").replace("}", "\}")
+                karaoke_parts.append(f"{{\k{cs}}}{safe_word}")
+            karaoke_text = " ".join(karaoke_parts)
+        else:
+            karaoke_text = text.replace("{", "\{").replace("}", "\}")
+
+        start_ass = format_ass_time(start)
+        end_ass = format_ass_time(end)
+        dialogue = f"Dialogue: 0,{start_ass},{end_ass},{style},,0,0,0,,{karaoke_text}"
+        dialogues.append(dialogue)
+
+    ass_content = header + "\n".join(dialogues)
+    ass_path = os.path.join(output_dir, "subtitles.ass")
+    with open(ass_path, "w", encoding="utf-8") as f:
+        f.write(ass_content)
+
+    return ass_path
 
 def burn(video_path, translation, voiceover_path, output_dir):
     out_path = os.path.join(output_dir, "final.mp4")
-
-    # Generate clean SRT with wrapped text
-    srt_path = generate_srt(translation, output_dir)
-
-    # Get video dimensions to calculate relative font size
     width, height = get_video_dimensions(video_path)
-
-    # Calculate font size: ~5% of video height, min 20, max 36
-    font_size = max(20, min(36, int(height * 0.048)))
-
-    # Margin from bottom: ~8% of height
-    margin_v = max(30, int(height * 0.08))
-
-    # Build subtitle style string for ffmpeg force_style
-    # Alignment: 2 = bottom center
-    # MarginV: vertical margin from bottom edge
-    # Outline + Shadow for readability
-    style = (
-        f"FontName=DejaVu Sans,"
-        f"FontSize={font_size},"
-        f"PrimaryColour=&H00FFFFFF,"
-        f"OutlineColour=&H00000000,"
-        f"Outline=2,"
-        f"Shadow=0,"
-        f"Alignment=2,"
-        f"MarginV={margin_v},"
-        f"MarginL=40,"
-        f"MarginR=40,"
-        f"WrapStyle=0,"
-        f"BorderStyle=1"
-    )
+    ass_path = build_ass(translation, output_dir, width, height)
 
     cmd = [
         "ffmpeg", "-y",
         "-i", video_path,
         "-i", voiceover_path,
-        "-vf", f"subtitles={srt_path}:force_style='{style}'",
+        "-vf", f"ass={ass_path}",
         "-map", "0:v:0",
         "-map", "1:a:0",
         "-c:v", "libx264", "-preset", "fast", "-crf", "23",
@@ -113,7 +107,6 @@ def burn(video_path, translation, voiceover_path, output_dir):
     except subprocess.CalledProcessError as e:
         print(f"  ffmpeg subtitle burn failed: {e}")
         print(f"  stderr: {e.stderr.decode() if e.stderr else 'N/A'}")
-        # Fallback: just merge video + voiceover without subtitles
         cmd_fallback = [
             "ffmpeg", "-y",
             "-i", video_path,
@@ -125,10 +118,9 @@ def burn(video_path, translation, voiceover_path, output_dir):
             out_path
         ]
         subprocess.run(cmd_fallback, check=True, capture_output=True)
-        print(f"  Fallback: video + voiceover only (no subtitles)")
+        print(f"  Fallback: video + voiceover only")
     finally:
-        # Clean up SRT file
-        if os.path.exists(srt_path):
-            os.remove(srt_path)
+        if os.path.exists(ass_path):
+            os.remove(ass_path)
 
     return out_path
