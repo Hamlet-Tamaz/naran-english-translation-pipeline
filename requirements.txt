@@ -1,6 +1,6 @@
 openai-whisper
 deep-translator
 gTTS
-moviepy
+moviepy==1.0.3
 srt
 requests
