@@ -1,0 +1,7 @@
+{
+  "video_id": "naran-hangai-smaller",
+  "original": "incoming/naran-hangai-smaller.mp4",
+  "output_dir": "processed/naran-hangai-smaller",
+  "final_video": "processed/naran-hangai-smaller/final.mp4",
+  "status": "completed"
+}
