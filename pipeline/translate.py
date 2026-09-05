@@ -3,31 +3,22 @@ import json
 import time
 
 def translate(transcript: dict, output_dir: str) -> dict:
-    """Translate Russian transcript to English. Priority: Kimi > OpenAI > Google."""
+    """Translate Russian transcript to English. Primary: OpenAI. Fallback: Google Translate."""
     segments_en = []
 
-    # Try Kimi first (cheapest, user already pays for Allegro)
-    kimi_key = os.environ.get("KIMI_API_KEY")
-    if kimi_key:
+    # Primary: OpenAI GPT-4o-mini
+    openai_key = os.environ.get("OPENAI_API_KEY")
+    if openai_key:
         try:
-            segments_en = kimi_translate(transcript, kimi_key)
-            print("  Translation: Kimi (Allegro plan)")
+            segments_en = openai_translate(transcript, openai_key)
+            print("  Translation: OpenAI GPT-4o-mini")
         except Exception as e:
-            print(f"  Kimi failed ({e}), trying OpenAI...")
+            print(f"  OpenAI failed ({e}), falling back to Google Translate...")
             segments_en = []
+    else:
+        print("  OPENAI_API_KEY not set, falling back to Google Translate...")
 
-    # Try OpenAI if Kimi not available or failed
-    if not segments_en:
-        openai_key = os.environ.get("OPENAI_API_KEY")
-        if openai_key:
-            try:
-                segments_en = openai_translate(transcript, openai_key)
-                print("  Translation: OpenAI GPT-4o-mini")
-            except Exception as e:
-                print(f"  OpenAI failed ({e}), falling back to Google...")
-                segments_en = []
-
-    # Fallback to Google Translate
+    # Fallback: Google Translate
     if not segments_en:
         segments_en = google_translate_fallback(transcript)
         print("  Translation: Google Translate (fallback)")
@@ -39,30 +30,6 @@ def translate(transcript: dict, output_dir: str) -> dict:
     with open(out, "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=2)
     return result
-
-def kimi_translate(transcript: dict, api_key: str) -> list:
-    """Translate using Kimi API (Moonshot AI)."""
-    import requests
-
-    full_ru = " ".join(seg["text"].strip() for seg in transcript.get("segments", []) if seg["text"].strip())
-
-    response = requests.post(
-        "https://api.moonshot.cn/v1/chat/completions",
-        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-        json={
-            "model": "moonshot-v1-8k",
-            "messages": [
-                {"role": "system", "content": "You are a precise translator. Translate the following Russian text to natural, conversational English. Preserve the tone and meaning exactly. Do not add explanations or notes."},
-                {"role": "user", "content": full_ru}
-            ],
-            "temperature": 0.3
-        },
-        timeout=60
-    )
-    response.raise_for_status()
-    translated_full = response.json()["choices"][0]["message"]["content"].strip()
-
-    return split_into_segments(translated_full, transcript)
 
 def openai_translate(transcript: dict, api_key: str) -> list:
     """Translate using OpenAI GPT-4o-mini."""
