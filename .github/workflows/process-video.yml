@@ -29,10 +29,10 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install ffmpeg
+      - name: Install ffmpeg and fonts
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg
+          sudo apt-get install -y ffmpeg fonts-dejavu-core
 
       - name: Install Python deps
         run: pip install --no-cache-dir -r requirements.txt
@@ -59,11 +59,15 @@ jobs:
 
       - name: Run pipeline
         run: |
-          python pipeline/render.py             --input "incoming/${{ github.event.inputs.video_filename }}"             --output-dir processed
+          python pipeline/render.py \
+            --input "incoming/${{ github.event.inputs.video_filename }}" \
+            --output-dir processed
 
       - name: Update queue
         run: |
-          python pipeline/update_queue.py             --video "${{ github.event.inputs.video_filename }}"             --status completed
+          python pipeline/update_queue.py \
+            --video "${{ github.event.inputs.video_filename }}" \
+            --status completed
 
       - name: Commit and push results
         run: |
