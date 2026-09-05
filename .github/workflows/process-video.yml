@@ -8,6 +8,9 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: write
+
 jobs:
   pipeline:
     runs-on: ubuntu-latest
@@ -17,7 +20,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_PAT }}
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -43,11 +46,15 @@ jobs:
 
       - name: Run pipeline
         run: |
-          python pipeline/render.py             --input "incoming/${{ github.event.inputs.video_filename }}"             --output-dir processed
+          python pipeline/render.py \
+            --input "incoming/${{ github.event.inputs.video_filename }}" \
+            --output-dir processed
 
       - name: Update queue
         run: |
-          python pipeline/update_queue.py             --video "${{ github.event.inputs.video_filename }}"             --status completed
+          python pipeline/update_queue.py \
+            --video "${{ github.event.inputs.video_filename }}" \
+            --status completed
 
       - name: Commit results
         run: |
@@ -55,4 +62,4 @@ jobs:
           git config user.email "actions@github.com"
           git add processed/ queue.json incoming/
           git diff --cached --quiet || git commit -m "pipeline: process ${{ github.event.inputs.video_filename }}"
-          git push
+          git push https://x-access-token:${{ secrets.GH_PAT }}@github.com/${{ github.repository }}.git
