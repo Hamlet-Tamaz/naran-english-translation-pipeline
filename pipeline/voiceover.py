@@ -1,6 +1,6 @@
 import os
 import subprocess
-import tempfile
+from pydub import AudioSegment
 
 # Voice mapping: each speaker gets a distinct OpenAI voice
 VOICE_MAP = {
@@ -35,7 +35,7 @@ def get_audio_duration(audio_path: str) -> float:
     return float(result.stdout.strip())
 
 def generate(translation: dict, output_dir: str) -> tuple:
-    """Generate per-speaker voiceovers and stitch with proper gaps."""
+    """Generate per-speaker voiceovers and stitch with proper gaps using pydub."""
     path = os.path.join(output_dir, "voiceover.mp3")
     api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -46,8 +46,12 @@ def generate(translation: dict, output_dir: str) -> tuple:
     if not segments:
         raise RuntimeError("No segments to voice.")
 
-    # Generate TTS for each segment
-    segment_files = []
+    # Calculate total duration needed (based on last segment end)
+    total_duration_ms = int(max(seg["end"] for seg in segments) * 1000) + 5000  # +5s buffer
+
+    # Start with silence
+    base_audio = AudioSegment.silent(duration=total_duration_ms)
+
     for i, seg in enumerate(segments):
         speaker = seg.get("speaker", "Naran")
         text = seg["text"].strip()
@@ -56,49 +60,20 @@ def generate(translation: dict, output_dir: str) -> tuple:
 
         seg_path = os.path.join(output_dir, f"voice_seg_{i:03d}.mp3")
         generate_for_speaker(text, speaker, seg_path, api_key)
-        duration = get_audio_duration(seg_path)
-        segment_files.append({
-            "path": seg_path,
-            "duration": duration,
-            "start": seg["start"],
-            "end": seg["end"],
-            "speaker": speaker
-        })
-        print(f"  [{speaker}] {text[:50]}... → {duration:.2f}s")
 
-    # Build ffmpeg concat filter: each segment at its proper timestamp
-    # Use adelay to position each clip, then amix
-    if len(segment_files) == 1:
-        # Just copy the single file
-        import shutil
-        shutil.copy(segment_files[0]["path"], path)
-    else:
-        # Build complex filter
-        inputs = []
-        delays = []
-        for i, sf in enumerate(segment_files):
-            inputs.extend(["-i", sf["path"]])
-            delay_ms = int(sf["start"] * 1000)
-            delays.append(f"[{i}]adelay={delay_ms}|{delay_ms}[a{i}]")
+        # Load segment and position it
+        segment_audio = AudioSegment.from_mp3(seg_path)
+        position_ms = int(seg["start"] * 1000)
 
-        mix_inputs = "".join(f"[a{i}]" for i in range(len(segment_files)))
-        mix_filter = f"{mix_inputs}amix=inputs={len(segment_files)}:duration=longest[aout]"
+        # Overlay at correct position
+        base_audio = base_audio.overlay(segment_audio, position=position_ms)
 
-        filter_complex = ";".join(delays + [mix_filter])
+        # Cleanup
+        os.remove(seg_path)
+        print(f"  [{speaker}] {text[:50]}... → {len(segment_audio)/1000:.2f}s @ {seg['start']:.1f}s")
 
-        cmd = ["ffmpeg", "-y"] + inputs + [
-            "-filter_complex", filter_complex,
-            "-map", "[aout]",
-            "-c:a", "aac", "-b:a", "192k",
-            path
-        ]
-        subprocess.run(cmd, check=True, capture_output=True)
-
-    # Cleanup segment files
-    for sf in segment_files:
-        if os.path.exists(sf["path"]):
-            os.remove(sf["path"])
-
+    # Export
+    base_audio.export(path, format="mp3", bitrate="192k")
     total_duration = get_audio_duration(path)
     print(f"  Voiceover stitched: {total_duration:.2f}s total")
     return path, total_duration
