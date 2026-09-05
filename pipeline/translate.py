@@ -46,29 +46,33 @@ def openai_translate_with_speakers(transcript: dict, api_key: str) -> list:
                 "text": seg["text"].strip()
             })
 
-    prompt = f"""You are analyzing a Russian transcript from an educational video. The host (Naran Hangai) discusses historical claims about Armenia, often quoting or responding to other people's arguments.
+    prompt = f"""You are analyzing a Russian transcript from an educational video by Naran Hangai. The host discusses historical claims about Armenia, frequently quoting or responding to arguments from other people. There may be MULTIPLE different commentators quoted.
 
 Here is the transcript divided into timed segments:
 {json.dumps(ru_segments, ensure_ascii=False, indent=2)}
 
 Your task:
-1. For each segment, identify the speaker: "Naran" (the host) or "Other" (people he quotes/responds to)
+1. Identify EACH distinct speaker. There may be 1-4 different people. Look for:
+   - "Naran" — the host. He introduces topics, says "let's check", "I found", "now let's see", "they tell us", gives analysis and debunking
+   - "Commenter1", "Commenter2", etc. — people he quotes or responds to. Look for phrases like "some say", "they claim", "according to X", or when he introduces an opposing view before debunking it. Each DISTINCT opposing view or quoted source should be a separate commenter.
+   - If the same quoted argument reappears, assign it to the SAME commenter number
 2. Translate each segment to natural, conversational English
 3. Return a JSON object with this exact structure:
 {{
   "segments": [
     {{"speaker": "Naran", "text": "English translation", "start": 0.0, "end": 5.2}},
+    {{"speaker": "Commenter1", "text": "English translation", "start": 5.2, "end": 10.1}},
     ...
   ]
 }}
 
 Guidelines:
-- Naran usually introduces topics, gives commentary, says "they tell us", "let's check", "I found", "now let's see"
-- Other speakers are quoted with phrases like "some say", "they claim", or represent opposing views Naran is debunking
-- If uncertain, label as "Naran"
-- Preserve all content — don't skip any text
-- Make the English natural and conversational
-- Keep segments roughly the same length and timing as the original"""
+- Naran is the host who debunks claims. He usually speaks the majority of the video.
+- Commenter1, Commenter2, etc. are distinct people whose arguments he quotes and then refutes.
+- If you cannot distinguish between commenters, use "Commenter1" for all non-Naran speech.
+- Preserve all content — don't skip any text.
+- Make the English natural and conversational.
+- Keep segments roughly the same length as the original."""
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -77,7 +81,7 @@ Guidelines:
             {"role": "user", "content": prompt}
         ],
         temperature=0.3,
-        max_tokens=3000,
+        max_tokens=4000,
         response_format={"type": "json_object"}
     )
 
@@ -88,8 +92,15 @@ Guidelines:
     if len(segments) < original_count * 0.3 or len(segments) > original_count * 3:
         raise ValueError(f"Segment count mismatch: got {len(segments)}, expected ~{original_count}")
 
+    # Normalize speaker names
     for seg in segments:
-        seg.setdefault("speaker", "Naran")
+        sp = seg.get("speaker", "Naran")
+        if sp.lower() in ("naran", "host", "speaker"):
+            seg["speaker"] = "Naran"
+        elif "commenter" in sp.lower():
+            seg["speaker"] = sp  # Keep as Commenter1, Commenter2, etc.
+        else:
+            seg["speaker"] = "Naran"
 
     return segments
 
