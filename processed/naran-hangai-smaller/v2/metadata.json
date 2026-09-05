@@ -1,0 +1,9 @@
+{
+  "video_id": "naran-hangai-smaller",
+  "version": 2,
+  "original": "incoming/naran-hangai-smaller.mp4",
+  "output_dir": "processed/naran-hangai-smaller/v2",
+  "final_video": "processed/naran-hangai-smaller/v2/final.mp4",
+  "voiceover_duration": 150.936,
+  "status": "completed"
+}
