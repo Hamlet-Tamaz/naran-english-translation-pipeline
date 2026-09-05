@@ -39,6 +39,17 @@
         "Naran"
       ],
       "voiceover_duration": 152.928
+    },
+    {
+      "number": 5,
+      "folder": "v5",
+      "created_at": "auto",
+      "speakers_found": [
+        "Kamran Razmovar",
+        "Narrator"
+      ],
+      "voiceover_duration": 115.056,
+      "back_translation_score": 0.584
     }
   ]
 }
