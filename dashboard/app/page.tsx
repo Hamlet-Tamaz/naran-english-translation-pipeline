@@ -57,6 +57,23 @@ export default function Dashboard() {
     }
   }
 
+  async function reprocessVideo(filename: string) {
+    setLoading(true);
+    setMessage(`Re-processing ${filename}...`);
+    try {
+      const res = await fetch("/api/reprocess", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename }),
+      });
+      const data = await res.json();
+      setMessage(data.message || "Re-processing started!");
+    } catch (e) {
+      setMessage("Error re-processing video. Check console.");
+    }
+    setLoading(false);
+  }
+
   async function triggerPipeline(filename: string) {
     setLoading(true);
     setMessage("Triggering pipeline...");
@@ -295,6 +312,9 @@ export default function Dashboard() {
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={() => openPreview(v.filename)} style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid #3b82f6", background: "transparent", color: "#3b82f6", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
                   ▶ Watch
+                </button>
+                <button onClick={() => reprocessVideo(v.filename)} disabled={loading} style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid #f59e0b", background: "transparent", color: "#f59e0b", fontSize: 13, fontWeight: 500, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1 }}>
+                  🔄 Re-process
                 </button>
                 <a
                   href={`https://github.com/Hamlet-Tamaz/naran-english-translation-pipeline/tree/main/processed/${v.filename.replace(".mp4", "")}`}
