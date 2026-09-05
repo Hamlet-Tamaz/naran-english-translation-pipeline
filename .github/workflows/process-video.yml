@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       video_filename:
-        description: 'Video file in incoming/ folder'
+        description: 'Video filename from queue.json'
         required: true
         type: string
 
@@ -41,8 +41,27 @@ jobs:
             ${{ runner.os }}-pip-
 
       - name: Install Python deps
+        run: pip install -r requirements.txt
+
+      - name: Download video from R2 if needed
         run: |
-          pip install -r requirements.txt
+          python -c "
+          import json, urllib.request, os
+          with open('queue.json') as f:
+              queue = json.load(f)
+          filename = '${{ github.event.inputs.video_filename }}'
+          video = next((v for v in queue['videos'] if v['filename'] == filename), None)
+          if video and video.get('source_url'):
+              print(f'Downloading from R2: {video["source_url"]}')
+              os.makedirs('incoming', exist_ok=True)
+              urllib.request.urlretrieve(video['source_url'], f'incoming/{filename}')
+              print('Download complete')
+          elif not os.path.exists(f'incoming/{filename}'):
+              print(f'Video not found in incoming/ and no source_url')
+              exit(1)
+          else:
+              print(f'Using local file: incoming/{filename}')
+          "
 
       - name: Run pipeline
         run: |
