@@ -2,9 +2,9 @@
   "videos": [
     {
       "filename": "naran-hangai-smaller.mp4",
-      "status": "completed",
+      "status": "pending_approval",
       "uploaded_at": "2026-09-05T03:42:41Z",
-      "processed_at": "2026-09-05T11:02:31.511452"
+      "processed_at": null
     }
   ]
 }
