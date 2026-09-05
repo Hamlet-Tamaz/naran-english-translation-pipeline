@@ -16,7 +16,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      KIMI_API_KEY: ${{ secrets.KIMI_API_KEY }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
     steps:
@@ -35,16 +34,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg
 
-      - name: Cache pip packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
       - name: Install Python deps
-        run: pip install -r requirements.txt
+        run: pip install --no-cache-dir -r requirements.txt
 
       - name: Download video from R2 if needed
         run: |
@@ -68,15 +59,11 @@ jobs:
 
       - name: Run pipeline
         run: |
-          python pipeline/render.py \
-            --input "incoming/${{ github.event.inputs.video_filename }}" \
-            --output-dir processed
+          python pipeline/render.py             --input "incoming/${{ github.event.inputs.video_filename }}"             --output-dir processed
 
       - name: Update queue
         run: |
-          python pipeline/update_queue.py \
-            --video "${{ github.event.inputs.video_filename }}" \
-            --status completed
+          python pipeline/update_queue.py             --video "${{ github.event.inputs.video_filename }}"             --status completed
 
       - name: Commit and push results
         run: |
