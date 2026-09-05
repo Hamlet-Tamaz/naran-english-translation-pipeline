@@ -9,11 +9,19 @@ interface QueueVideo {
   processed_at: string | null;
 }
 
-interface EnvStatus {
-  ready: boolean;
-  github_ready: boolean;
-  r2_ready: boolean;
-  checks: Record<string, boolean>;
+interface VersionInfo {
+  number: number;
+  folder: string;
+  created_at: string;
+  speakers_found: string[];
+  voiceover_duration: number;
+}
+
+interface SpeakerComparison {
+  gpt4o: { method: string; speakers_found: string[]; segment_count: number; cost: string; pros: string[]; cons: string[] };
+  pyannote: { method: string; speakers_found: string[]; segment_count: number; cost: string; pros: string[]; cons: string[] };
+  pause_heuristic: { method: string; speakers_found: string[]; segment_count: number; cost: string; pros: string[]; cons: string[] };
+  recommendation: string;
 }
 
 export default function Dashboard() {
@@ -22,12 +30,18 @@ export default function Dashboard() {
   const [message, setMessage] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [envStatus, setEnvStatus] = useState<EnvStatus | null>(null);
+  const [envStatus, setEnvStatus] = useState<any>(null);
   const [checkingEnv, setCheckingEnv] = useState(true);
   const [previewVideo, setPreviewVideo] = useState<string | null>(null);
   const [previewCaption, setPreviewCaption] = useState<string>("");
+  const [previewVersions, setPreviewVersions] = useState<VersionInfo[]>([]);
+  const [previewComparison, setPreviewComparison] = useState<SpeakerComparison | null>(null);
+  const [selectedVersion, setSelectedVersion] = useState<number>(0);
+  const [videoTime, setVideoTime] = useState(0);
+  const [videoDuration, setVideoDuration] = useState(0);
   const [processingFile, setProcessingFile] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     checkEnv();
@@ -36,17 +50,16 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-clear processing state when video completes
   useEffect(() => {
     if (processingFile) {
       const completed = videos.find(v => v.filename === processingFile && v.status === "completed");
       const failed = videos.find(v => v.filename === processingFile && v.status === "failed");
       if (completed) {
         setProcessingFile(null);
-        setMessage("✅ Processing complete! Video ready.");
+        setMessage("Processing complete! Video ready.");
       } else if (failed) {
         setProcessingFile(null);
-        setMessage("❌ Processing failed. Check GitHub Actions logs.");
+        setMessage("Processing failed. Check GitHub Actions logs.");
       }
     }
   }, [videos, processingFile]);
@@ -73,27 +86,32 @@ export default function Dashboard() {
     }
   }
 
-  async function reprocessVideo(filename: string) {
-    setLoading(true);
-    setMessage(`Re-processing ${filename}...`);
+  async function fetchVersions(filename: string): Promise<VersionInfo[]> {
+    const videoId = filename.replace(".mp4", "");
     try {
-      const res = await fetch("/api/reprocess", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filename }),
-      });
+      const res = await fetch(`https://raw.githubusercontent.com/Hamlet-Tamaz/naran-english-translation-pipeline/main/processed/${videoId}/versions.json?t=${Date.now()}`);
+      if (!res.ok) return [];
       const data = await res.json();
-      setMessage(data.message || "Re-processing started!");
-      fetchQueue();
+      return data.versions || [];
     } catch (e) {
-      setMessage("Error re-processing video. Check console.");
+      return [];
     }
-    setLoading(false);
+  }
+
+  async function fetchComparison(filename: string, versionNum: number): Promise<SpeakerComparison | null> {
+    const videoId = filename.replace(".mp4", "");
+    try {
+      const res = await fetch(`https://raw.githubusercontent.com/Hamlet-Tamaz/naran-english-translation-pipeline/main/processed/${videoId}/v${versionNum}/speaker_comparison.json?t=${Date.now()}`);
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (e) {
+      return null;
+    }
   }
 
   async function triggerPipeline(filename: string) {
     setProcessingFile(filename);
-    setMessage("⏳ Processing started... Takes ~3-5 minutes. Page auto-refreshes.");
+    setMessage("Processing started... Takes ~5-8 minutes. Page auto-refreshes.");
     try {
       const res = await fetch("/api/trigger", {
         method: "POST",
@@ -103,7 +121,7 @@ export default function Dashboard() {
       const data = await res.json();
       setMessage(data.message || "Pipeline triggered!");
     } catch (e) {
-      setMessage("Error triggering pipeline. Check console.");
+      setMessage("Error triggering pipeline.");
       setProcessingFile(null);
     }
   }
@@ -120,6 +138,60 @@ export default function Dashboard() {
       setMessage("Error triggering scan.");
     }
     setLoading(false);
+  }
+
+  async function openPreview(filename: string) {
+    const versions = await fetchVersions(filename);
+    setPreviewVersions(versions);
+    const versionNum = versions.length > 0 ? versions[versions.length - 1].number : 1;
+    setSelectedVersion(versionNum);
+    await loadVersionPreview(filename, versionNum);
+  }
+
+  async function loadVersionPreview(filename: string, versionNum: number) {
+    const videoId = filename.replace(".mp4", "");
+    const videoUrl = `https://raw.githubusercontent.com/Hamlet-Tamaz/naran-english-translation-pipeline/main/processed/${videoId}/v${versionNum}/final.mp4`;
+
+    try {
+      const res = await fetch(`https://raw.githubusercontent.com/Hamlet-Tamaz/naran-english-translation-pipeline/main/processed/${videoId}/v${versionNum}/caption.txt`);
+      const caption = await res.text();
+      setPreviewCaption(caption);
+    } catch (e) {
+      setPreviewCaption("");
+    }
+
+    const comparison = await fetchComparison(filename, versionNum);
+    setPreviewComparison(comparison);
+    setPreviewVideo(videoUrl);
+    setVideoTime(0);
+    setVideoDuration(0);
+  }
+
+  async function deleteVersion(filename: string, versionNum: number) {
+    if (!confirm(`Delete version ${versionNum} of ${filename}? This cannot be undone.`)) return;
+    setMessage("Deleting version...");
+    try {
+      const res = await fetch("/api/delete-version", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename, version: versionNum }),
+      });
+      const data = await res.json();
+      setMessage(data.message || "Version deleted.");
+      if (previewVersions.length <= 1) {
+        setPreviewVideo(null);
+      } else {
+        const remaining = previewVersions.filter(v => v.number !== versionNum);
+        setPreviewVersions(remaining);
+        if (selectedVersion === versionNum && remaining.length > 0) {
+          const newV = remaining[remaining.length - 1].number;
+          setSelectedVersion(newV);
+          await loadVersionPreview(filename, newV);
+        }
+      }
+    } catch (e) {
+      setMessage("Error deleting version.");
+    }
   }
 
   async function uploadFile(file: File) {
@@ -139,7 +211,7 @@ export default function Dashboard() {
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       const data = await res.json();
       if (res.ok) {
-        setMessage(`✅ Uploaded ${file.name}! Appears in Pending.`);
+        setMessage(`Uploaded ${file.name}! Appears in Pending.`);
         setUploadProgress(100);
         fetchQueue();
       } else {
@@ -188,7 +260,7 @@ export default function Dashboard() {
         body: JSON.stringify({ filename: file.name, publicUrl, objectKey }),
       });
       if (confirmRes.ok) {
-        setMessage(`✅ Uploaded ${file.name}! Appears in Pending.`);
+        setMessage(`Uploaded ${file.name}! Appears in Pending.`);
         setUploadProgress(100);
         fetchQueue();
       } else {
@@ -202,19 +274,6 @@ export default function Dashboard() {
     }
   }
 
-  async function openPreview(filename: string) {
-    const videoId = filename.replace(".mp4", "");
-    const videoUrl = `https://raw.githubusercontent.com/Hamlet-Tamaz/naran-english-translation-pipeline/main/processed/${videoId}/final.mp4`;
-    try {
-      const res = await fetch(`https://raw.githubusercontent.com/Hamlet-Tamaz/naran-english-translation-pipeline/main/processed/${videoId}/caption.txt`);
-      const caption = await res.text();
-      setPreviewCaption(caption);
-    } catch (e) {
-      setPreviewCaption("");
-    }
-    setPreviewVideo(videoUrl);
-  }
-
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
@@ -225,19 +284,38 @@ export default function Dashboard() {
 
   const onDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); }, []);
   const onDragLeave = useCallback((e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); }, []);
-
   const onFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) uploadFile(file);
   };
 
+  const handleTimeUpdate = () => {
+    if (videoRef.current) {
+      setVideoTime(videoRef.current.currentTime);
+      setVideoDuration(videoRef.current.duration || 0);
+    }
+  };
+
+  const handleScrub = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = parseFloat(e.target.value);
+    setVideoTime(time);
+    if (videoRef.current) {
+      videoRef.current.currentTime = time;
+    }
+  };
+
   const pending = videos.filter(v => v.status === "pending_approval");
   const completed = videos.filter(v => v.status === "completed");
   const processing = videos.filter(v => v.status === "processing");
-
   const githubReady = envStatus?.github_ready ?? false;
   const r2Ready = envStatus?.r2_ready ?? false;
   const canUpload = githubReady;
+
+  const formatTime = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  };
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 16px" }}>
@@ -253,6 +331,7 @@ export default function Dashboard() {
             <StatusRow label="GitHub API" ready={githubReady} />
             <StatusRow label="Cloud Storage (R2)" ready={r2Ready} optional />
             <StatusRow label="OpenAI Voiceover" ready={true} />
+            <StatusRow label="Speaker Diarization (pyannote)" ready={!!envStatus?.checks?.HF_TOKEN} optional />
           </div>
           {!githubReady && (
             <div style={{ marginTop: 10, fontSize: 12, color: "#f87171" }}>
@@ -332,12 +411,9 @@ export default function Dashboard() {
                 <button onClick={() => openPreview(v.filename)} style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid #3b82f6", background: "transparent", color: "#3b82f6", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
                   ▶ Watch
                 </button>
-                <button onClick={() => reprocessVideo(v.filename)} disabled={loading || !!processingFile} style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid #f59e0b", background: "transparent", color: "#f59e0b", fontSize: 13, fontWeight: 500, cursor: (loading || processingFile) ? "not-allowed" : "pointer", opacity: (loading || processingFile) ? 0.6 : 1 }}>
+                <button onClick={() => triggerPipeline(v.filename)} disabled={loading || !!processingFile} style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid #f59e0b", background: "transparent", color: "#f59e0b", fontSize: 13, fontWeight: 500, cursor: (loading || processingFile) ? "not-allowed" : "pointer", opacity: (loading || processingFile) ? 0.6 : 1 }}>
                   🔄 Re-process
                 </button>
-                <a href={`https://github.com/Hamlet-Tamaz/naran-english-translation-pipeline/tree/main/processed/${v.filename.replace(".mp4", "")}`} target="_blank" rel="noopener" style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid #3f3f46", background: "transparent", color: "#a1a1aa", fontSize: 13, textDecoration: "none", display: "inline-block" }}>
-                  Files
-                </a>
               </div>
             </VideoRow>
           ))
@@ -345,21 +421,114 @@ export default function Dashboard() {
       </Section>
 
       {previewVideo && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 24 }} onClick={() => setPreviewVideo(null)}>
-          <div style={{ maxWidth: 700, width: "100%", background: "#18181b", borderRadius: 12, overflow: "hidden", border: "1px solid #27272a" }} onClick={e => e.stopPropagation()}>
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.9)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 24, overflow: "auto" }} onClick={() => setPreviewVideo(null)}>
+          <div style={{ maxWidth: 800, width: "100%", background: "#18181b", borderRadius: 12, overflow: "hidden", border: "1px solid #27272a" }} onClick={e => e.stopPropagation()}>
+
+            {/* Header */}
             <div style={{ padding: "16px 20px", borderBottom: "1px solid #27272a", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: 15, fontWeight: 500, color: "#fafafa" }}>Preview</span>
               <button onClick={() => setPreviewVideo(null)} style={{ background: "none", border: "none", color: "#a1a1aa", fontSize: 20, cursor: "pointer" }}>×</button>
             </div>
-            <video controls style={{ width: "100%", display: "block" }} src={previewVideo} />
-            <div style={{ padding: "16px 20px", borderTop: "1px solid #27272a" }}>
+
+            {/* Version selector */}
+            {previewVersions.length > 1 && (
+              <div style={{ padding: "12px 20px", borderBottom: "1px solid #27272a", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <span style={{ fontSize: 12, color: "#a1a1aa" }}>Version:</span>
+                {previewVersions.map(v => (
+                  <button
+                    key={v.number}
+                    onClick={() => { setSelectedVersion(v.number); loadVersionPreview(videos.find(vid => vid.status === "completed")?.filename || "", v.number); }}
+                    style={{
+                      padding: "4px 10px", borderRadius: 4, border: "1px solid",
+                      borderColor: selectedVersion === v.number ? "#3b82f6" : "#3f3f46",
+                      background: selectedVersion === v.number ? "rgba(59,130,246,0.2)" : "transparent",
+                      color: selectedVersion === v.number ? "#3b82f6" : "#a1a1aa",
+                      fontSize: 12, cursor: "pointer"
+                    }}
+                  >
+                    v{v.number}
+                  </button>
+                ))}
+                <button
+                  onClick={() => deleteVersion(videos.find(v => v.status === "completed")?.filename || "", selectedVersion)}
+                  style={{ padding: "4px 10px", borderRadius: 4, border: "1px solid #ef4444", background: "transparent", color: "#ef4444", fontSize: 12, cursor: "pointer", marginLeft: "auto" }}
+                >
+                  🗑 Delete v{selectedVersion}
+                </button>
+              </div>
+            )}
+
+            {/* Video player */}
+            <video
+              ref={videoRef}
+              controls
+              style={{ width: "100%", display: "block" }}
+              src={previewVideo}
+              onTimeUpdate={handleTimeUpdate}
+              onLoadedMetadata={handleTimeUpdate}
+            />
+
+            {/* Time scrubber */}
+            {videoDuration > 0 && (
+              <div style={{ padding: "8px 20px", borderBottom: "1px solid #27272a" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={{ fontSize: 11, color: "#a1a1aa", minWidth: 36, textAlign: "right" }}>{formatTime(videoTime)}</span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={videoDuration}
+                    step={0.1}
+                    value={videoTime}
+                    onChange={handleScrub}
+                    style={{ flex: 1, accentColor: "#3b82f6" }}
+                  />
+                  <span style={{ fontSize: 11, color: "#a1a1aa", minWidth: 36 }}>{formatTime(videoDuration)}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Speaker comparison */}
+            {previewComparison && (
+              <div style={{ padding: "16px 20px", borderBottom: "1px solid #27272a" }}>
+                <div style={{ fontSize: 13, fontWeight: 500, color: "#fafafa", marginBottom: 12 }}>Speaker Detection Comparison</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+                  <ComparisonCard
+                    title="GPT-4o"
+                    speakers={previewComparison.gpt4o.speakers_found}
+                    segments={previewComparison.gpt4o.segment_count}
+                    cost={previewComparison.gpt4o.cost}
+                    color="#3b82f6"
+                  />
+                  <ComparisonCard
+                    title="pyannote.audio"
+                    speakers={previewComparison.pyannote.speakers_found}
+                    segments={previewComparison.pyannote.segment_count}
+                    cost={previewComparison.pyannote.cost}
+                    color={previewComparison.pyannote.segment_count > 0 ? "#22c55e" : "#71717a"}
+                  />
+                  <ComparisonCard
+                    title="Pause Heuristic"
+                    speakers={previewComparison.pause_heuristic.speakers_found}
+                    segments={previewComparison.pause_heuristic.segment_count}
+                    cost={previewComparison.pause_heuristic.cost}
+                    color="#f59e0b"
+                  />
+                </div>
+                <div style={{ marginTop: 12, fontSize: 12, color: "#a1a1aa", fontStyle: "italic" }}>
+                  💡 {previewComparison.recommendation}
+                </div>
+              </div>
+            )}
+
+            {/* Caption */}
+            <div style={{ padding: "16px 20px" }}>
               <div style={{ fontSize: 12, color: "#a1a1aa", marginBottom: 8 }}>Caption</div>
-              <pre style={{ margin: 0, fontSize: 12, color: "#d4d4d8", whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 120, overflow: "auto" }}>{previewCaption}</pre>
+              <pre style={{ margin: 0, fontSize: 12, color: "#d4d4d8", whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 150, overflow: "auto" }}>{previewCaption}</pre>
               <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
                 <a href={previewVideo} download style={{ padding: "8px 16px", borderRadius: 6, border: "none", background: "#3b82f6", color: "#fff", fontSize: 13, fontWeight: 500, textDecoration: "none", display: "inline-block" }}>
                   ⬇ Download Video
                 </a>
-                <button onClick={() => { navigator.clipboard.writeText(previewCaption); setMessage("✅ Caption copied!"); }} style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid #3f3f46", background: "transparent", color: "#a1a1aa", fontSize: 13, cursor: "pointer" }}>
+                <button onClick={() => { navigator.clipboard.writeText(previewCaption); setMessage("Caption copied!"); }} style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid #3f3f46", background: "transparent", color: "#a1a1aa", fontSize: 13, cursor: "pointer" }}>
                   📋 Copy Caption
                 </button>
               </div>
@@ -386,6 +555,17 @@ function StatCard({ label, value, color }: { label: string; value: number; color
     <div style={{ padding: "16px", borderRadius: 10, border: "1px solid #27272a", background: "rgba(255,255,255,0.02)" }}>
       <div style={{ fontSize: 28, fontWeight: 600, color }}>{value}</div>
       <div style={{ fontSize: 12, color: "#a1a1aa", marginTop: 4 }}>{label}</div>
+    </div>
+  );
+}
+
+function ComparisonCard({ title, speakers, segments, cost, color }: { title: string; speakers: string[]; segments: number; cost: string; color: string }) {
+  return (
+    <div style={{ padding: "12px", borderRadius: 8, border: "1px solid #27272a", background: "rgba(255,255,255,0.02)" }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color, marginBottom: 6 }}>{title}</div>
+      <div style={{ fontSize: 11, color: "#a1a1aa", marginBottom: 4 }}>Speakers: {speakers.length > 0 ? speakers.join(", ") : "N/A"}</div>
+      <div style={{ fontSize: 11, color: "#a1a1aa", marginBottom: 4 }}>Segments: {segments}</div>
+      <div style={{ fontSize: 11, color: "#71717a" }}>{cost}</div>
     </div>
   );
 }
