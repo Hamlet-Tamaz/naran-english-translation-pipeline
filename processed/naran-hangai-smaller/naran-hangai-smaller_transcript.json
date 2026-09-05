@@ -67,9 +67,9 @@
         50814
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.3327117528670873,
+      "avg_logprob": -0.3327240381485377,
       "compression_ratio": 2.0660592255125283,
-      "no_speech_prob": 0.20077234506607056
+      "no_speech_prob": 0.20077231526374817
     },
     {
       "id": 1,
@@ -96,9 +96,9 @@
         50964
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.3327117528670873,
+      "avg_logprob": -0.3327240381485377,
       "compression_ratio": 2.0660592255125283,
-      "no_speech_prob": 0.20077234506607056
+      "no_speech_prob": 0.20077231526374817
     },
     {
       "id": 2,
@@ -143,9 +143,9 @@
         51214
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.3327117528670873,
+      "avg_logprob": -0.3327240381485377,
       "compression_ratio": 2.0660592255125283,
-      "no_speech_prob": 0.20077234506607056
+      "no_speech_prob": 0.20077231526374817
     },
     {
       "id": 3,
@@ -197,9 +197,9 @@
         51464
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.3327117528670873,
+      "avg_logprob": -0.3327240381485377,
       "compression_ratio": 2.0660592255125283,
-      "no_speech_prob": 0.20077234506607056
+      "no_speech_prob": 0.20077231526374817
     },
     {
       "id": 4,
@@ -255,9 +255,9 @@
         51764
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.3327117528670873,
+      "avg_logprob": -0.3327240381485377,
       "compression_ratio": 2.0660592255125283,
-      "no_speech_prob": 0.20077234506607056
+      "no_speech_prob": 0.20077231526374817
     },
     {
       "id": 5,
@@ -300,9 +300,9 @@
         50614
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.33289132528747156,
+      "avg_logprob": -0.3329019357037071,
       "compression_ratio": 2.075880758807588,
-      "no_speech_prob": 0.09484163671731949
+      "no_speech_prob": 0.09484097361564636
     },
     {
       "id": 6,
@@ -342,9 +342,9 @@
         50814
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.33289132528747156,
+      "avg_logprob": -0.3329019357037071,
       "compression_ratio": 2.075880758807588,
-      "no_speech_prob": 0.09484163671731949
+      "no_speech_prob": 0.09484097361564636
     },
     {
       "id": 7,
@@ -398,9 +398,9 @@
         51064
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.33289132528747156,
+      "avg_logprob": -0.3329019357037071,
       "compression_ratio": 2.075880758807588,
-      "no_speech_prob": 0.09484163671731949
+      "no_speech_prob": 0.09484097361564636
     },
     {
       "id": 8,
@@ -456,9 +456,9 @@
         51464
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.33289132528747156,
+      "avg_logprob": -0.3329019357037071,
       "compression_ratio": 2.075880758807588,
-      "no_speech_prob": 0.09484163671731949
+      "no_speech_prob": 0.09484097361564636
     },
     {
       "id": 9,
@@ -497,9 +497,9 @@
         50614
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.3224598124057432,
+      "avg_logprob": -0.3224705563315862,
       "compression_ratio": 1.9421052631578948,
-      "no_speech_prob": 0.5956552624702454
+      "no_speech_prob": 0.595658004283905
     },
     {
       "id": 10,
@@ -537,9 +537,9 @@
         50864
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.3224598124057432,
+      "avg_logprob": -0.3224705563315862,
       "compression_ratio": 1.9421052631578948,
-      "no_speech_prob": 0.5956552624702454
+      "no_speech_prob": 0.595658004283905
     },
     {
       "id": 11,
@@ -579,9 +579,9 @@
         51114
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.3224598124057432,
+      "avg_logprob": -0.3224705563315862,
       "compression_ratio": 1.9421052631578948,
-      "no_speech_prob": 0.5956552624702454
+      "no_speech_prob": 0.595658004283905
     },
     {
       "id": 12,
@@ -615,9 +615,9 @@
         51264
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.3224598124057432,
+      "avg_logprob": -0.3224705563315862,
       "compression_ratio": 1.9421052631578948,
-      "no_speech_prob": 0.5956552624702454
+      "no_speech_prob": 0.595658004283905
     },
     {
       "id": 13,
@@ -657,9 +657,9 @@
         51464
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.3224598124057432,
+      "avg_logprob": -0.3224705563315862,
       "compression_ratio": 1.9421052631578948,
-      "no_speech_prob": 0.5956552624702454
+      "no_speech_prob": 0.595658004283905
     },
     {
       "id": 14,
@@ -690,9 +690,9 @@
         51664
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.3224598124057432,
+      "avg_logprob": -0.3224705563315862,
       "compression_ratio": 1.9421052631578948,
-      "no_speech_prob": 0.5956552624702454
+      "no_speech_prob": 0.595658004283905
     },
     {
       "id": 15,
@@ -777,7 +777,7 @@
         51064
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.24623283587004008,
+      "avg_logprob": -0.2462440289949116,
       "compression_ratio": 2.016,
       "no_speech_prob": 0.673593282699585
     },
@@ -815,7 +815,7 @@
         51264
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.24623283587004008,
+      "avg_logprob": -0.2462440289949116,
       "compression_ratio": 2.016,
       "no_speech_prob": 0.673593282699585
     },
@@ -848,7 +848,7 @@
         51414
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.24623283587004008,
+      "avg_logprob": -0.2462440289949116,
       "compression_ratio": 2.016,
       "no_speech_prob": 0.673593282699585
     },
@@ -892,7 +892,7 @@
         51714
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.24623283587004008,
+      "avg_logprob": -0.2462440289949116,
       "compression_ratio": 2.016,
       "no_speech_prob": 0.673593282699585
     },
@@ -920,9 +920,9 @@
         50464
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.2875322765774197,
+      "avg_logprob": -0.2875437630547418,
       "compression_ratio": 2.0533980582524274,
-      "no_speech_prob": 0.44494494795799255
+      "no_speech_prob": 0.4449467957019806
     },
     {
       "id": 20,
@@ -962,9 +962,9 @@
         50664
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.2875322765774197,
+      "avg_logprob": -0.2875437630547418,
       "compression_ratio": 2.0533980582524274,
-      "no_speech_prob": 0.44494494795799255
+      "no_speech_prob": 0.4449467957019806
     },
     {
       "id": 21,
@@ -1008,9 +1008,9 @@
         50914
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.2875322765774197,
+      "avg_logprob": -0.2875437630547418,
       "compression_ratio": 2.0533980582524274,
-      "no_speech_prob": 0.44494494795799255
+      "no_speech_prob": 0.4449467957019806
     },
     {
       "id": 22,
@@ -1039,9 +1039,9 @@
         51064
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.2875322765774197,
+      "avg_logprob": -0.2875437630547418,
       "compression_ratio": 2.0533980582524274,
-      "no_speech_prob": 0.44494494795799255
+      "no_speech_prob": 0.4449467957019806
     },
     {
       "id": 23,
@@ -1075,9 +1075,9 @@
         51214
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.2875322765774197,
+      "avg_logprob": -0.2875437630547418,
       "compression_ratio": 2.0533980582524274,
-      "no_speech_prob": 0.44494494795799255
+      "no_speech_prob": 0.4449467957019806
     },
     {
       "id": 24,
@@ -1123,9 +1123,9 @@
         51464
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.2875322765774197,
+      "avg_logprob": -0.2875437630547418,
       "compression_ratio": 2.0533980582524274,
-      "no_speech_prob": 0.44494494795799255
+      "no_speech_prob": 0.4449467957019806
     },
     {
       "id": 25,
@@ -1161,9 +1161,9 @@
         51714
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.2875322765774197,
+      "avg_logprob": -0.2875437630547418,
       "compression_ratio": 2.0533980582524274,
-      "no_speech_prob": 0.44494494795799255
+      "no_speech_prob": 0.4449467957019806
     },
     {
       "id": 26,
@@ -1214,9 +1214,9 @@
         50664
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.18046514270375075,
+      "avg_logprob": -0.18047675345707864,
       "compression_ratio": 1.950381679389313,
-      "no_speech_prob": 0.12245799601078033
+      "no_speech_prob": 0.12245656549930573
     },
     {
       "id": 27,
@@ -1260,9 +1260,9 @@
         50914
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.18046514270375075,
+      "avg_logprob": -0.18047675345707864,
       "compression_ratio": 1.950381679389313,
-      "no_speech_prob": 0.12245799601078033
+      "no_speech_prob": 0.12245656549930573
     },
     {
       "id": 28,
@@ -1302,9 +1302,9 @@
         51264
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.18046514270375075,
+      "avg_logprob": -0.18047675345707864,
       "compression_ratio": 1.950381679389313,
-      "no_speech_prob": 0.12245799601078033
+      "no_speech_prob": 0.12245656549930573
     }
   ],
   "language": "ru"
