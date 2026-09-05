@@ -11,11 +11,13 @@ def diarize_audio(audio_path: str, output_dir: str) -> list:
         return []
 
     try:
+        from huggingface_hub import login
         from pyannote.audio import Pipeline
-        pipeline = Pipeline.from_pretrained(
-            "pyannote/speaker-diarization-3.1",
-            use_auth_token=hf_token
-        )
+
+        # Login to Hugging Face
+        login(token=hf_token)
+
+        pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization-3.1")
 
         print("  Running pyannote.audio diarization...")
         diarization = pipeline(audio_path)
@@ -54,7 +56,6 @@ def pause_heuristic_diarization(transcript: dict, pause_threshold: float = 1.5) 
     speaker_counter = 1
 
     for i, seg in enumerate(transcript.get("segments", [])):
-        # Check pause before this segment
         if i > 0:
             prev_end = transcript["segments"][i-1]["end"]
             pause = seg["start"] - prev_end
