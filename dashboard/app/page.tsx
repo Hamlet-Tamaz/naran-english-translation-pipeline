@@ -85,12 +85,47 @@ export default function Dashboard() {
     setLoading(false);
   }
 
-  async function uploadToR2(file: File) {
+  async function uploadFile(file: File) {
     setUploadProgress(0);
-    setMessage(`Preparing upload for ${file.name}...`);
+    setMessage(`Uploading ${file.name}...`);
+
+    // Try R2 first if configured
+    if (envStatus?.r2_ready) {
+      await uploadToR2(file);
+    } else {
+      await uploadDirect(file);
+    }
+  }
+
+  async function uploadDirect(file: File) {
+    // Direct upload to GitHub (small files only)
+    const formData = new FormData();
+    formData.append("file", file);
 
     try {
-      // Step 1: Get presigned URL from our API
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setMessage(`Uploaded ${file.name}! Appears in Pending.`);
+        setUploadProgress(100);
+        fetchQueue();
+      } else {
+        setMessage(`Error: ${data.message || "Upload failed"}`);
+        setUploadProgress(0);
+      }
+    } catch (e: any) {
+      setMessage(`Error: ${e.message}`);
+      setUploadProgress(0);
+    }
+  }
+
+  async function uploadToR2(file: File) {
+    try {
+      // Step 1: Get presigned URL
       const presignRes = await fetch("/api/upload", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -121,13 +156,13 @@ export default function Dashboard() {
           if (xhr.status >= 200 && xhr.status < 300) resolve();
           else reject(new Error(`Upload failed: ${xhr.status}`));
         });
-        xhr.addEventListener("error", () => reject(new Error("Network error during upload")));
+        xhr.addEventListener("error", () => reject(new Error("Network error")));
         xhr.open("PUT", presignedUrl);
         xhr.setRequestHeader("Content-Type", file.type);
         xhr.send(file);
       });
 
-      // Step 3: Confirm and update queue
+      // Step 3: Confirm
       setMessage("Finalizing...");
       const confirmRes = await fetch("/api/confirm", {
         method: "POST",
@@ -136,7 +171,7 @@ export default function Dashboard() {
       });
 
       if (confirmRes.ok) {
-        setMessage(`Uploaded ${file.name}! It appears in Pending.`);
+        setMessage(`Uploaded ${file.name}! Appears in Pending.`);
         setUploadProgress(100);
         fetchQueue();
       } else {
@@ -155,11 +190,11 @@ export default function Dashboard() {
     setIsDragging(false);
     const file = e.dataTransfer.files[0];
     if (file && file.type.startsWith("video/")) {
-      uploadToR2(file);
+      uploadFile(file);
     } else {
       setMessage("Error: Please drop a video file (MP4, MOV, etc.)");
     }
-  }, []);
+  }, [envStatus]);
 
   const onDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -173,14 +208,16 @@ export default function Dashboard() {
 
   const onFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) uploadToR2(file);
+    if (file) uploadFile(file);
   };
 
   const pending = videos.filter(v => v.status === "pending_approval");
   const completed = videos.filter(v => v.status === "completed");
   const processing = videos.filter(v => v.status === "processing");
 
-  const isReady = envStatus?.ready;
+  const githubReady = envStatus?.github_ready;
+  const r2Ready = envStatus?.r2_ready;
+  const canUpload = githubReady; // Can upload if GitHub is ready (direct mode)
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 16px" }}>
@@ -193,36 +230,29 @@ export default function Dashboard() {
         </p>
       </header>
 
-      {/* Setup Banner */}
-      {!checkingEnv && !isReady && (
+      {/* Setup Status */}
+      {!checkingEnv && (
         <div style={{
-          padding: "16px 20px", borderRadius: 10, marginBottom: 24,
-          border: "1px solid rgba(239,68,68,0.3)",
-          background: "rgba(239,68,68,0.08)"
+          padding: "14px 18px", borderRadius: 10, marginBottom: 24,
+          border: "1px solid #27272a", background: "rgba(255,255,255,0.02)"
         }}>
-          <div style={{ fontSize: 15, fontWeight: 600, color: "#fca5a5", marginBottom: 8 }}>
-            Setup Required
+          <div style={{ fontSize: 13, fontWeight: 500, color: "#d4d4d8", marginBottom: 10 }}>
+            System Status
           </div>
-          <div style={{ fontSize: 13, color: "#fca5a5", lineHeight: 1.6 }}>
-            {!envStatus?.github_ready && (
-              <div>• Add <code style={{ background: "#27272a", padding: "1px 6px", borderRadius: 4 }}>GITHUB_TOKEN</code> to Vercel Environment Variables</div>
-            )}
-            {!envStatus?.r2_ready && (
-              <>
-                <div>• Add R2 credentials to Vercel Environment Variables:</div>
-                <div style={{ paddingLeft: 16, marginTop: 4 }}>
-                  <code style={{ background: "#27272a", padding: "1px 6px", borderRadius: 4 }}>R2_ACCOUNT_ID</code>{" "}
-                  <code style={{ background: "#27272a", padding: "1px 6px", borderRadius: 4 }}>R2_ACCESS_KEY_ID</code>{" "}
-                  <code style={{ background: "#27272a", padding: "1px 6px", borderRadius: 4 }}>R2_SECRET_ACCESS_KEY</code>{" "}
-                  <code style={{ background: "#27272a", padding: "1px 6px", borderRadius: 4 }}>R2_BUCKET_NAME</code>{" "}
-                  <code style={{ background: "#27272a", padding: "1px 6px", borderRadius: 4 }}>R2_PUBLIC_URL</code>
-                </div>
-              </>
-            )}
-            <div style={{ marginTop: 8, fontSize: 12, color: "#f87171" }}>
-              Vercel Dashboard → Project Settings → Environment Variables → Add all missing vars → Redeploy
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <StatusRow label="GitHub API" ready={githubReady} />
+            <StatusRow label="Cloud Storage (R2)" ready={r2Ready} optional />
+          </div>
+          {!githubReady && (
+            <div style={{ marginTop: 10, fontSize: 12, color: "#f87171" }}>
+              Add GITHUB_TOKEN to Vercel Environment Variables and redeploy.
             </div>
-          </div>
+          )}
+          {githubReady && !r2Ready && (
+            <div style={{ marginTop: 10, fontSize: 12, color: "#a1a1aa" }}>
+              Direct upload active (max ~4.5MB). Add R2 credentials for unlimited file sizes.
+            </div>
+          )}
         </div>
       )}
 
@@ -241,17 +271,17 @@ export default function Dashboard() {
         onDrop={onDrop}
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
-        onClick={() => isReady && fileInputRef.current?.click()}
+        onClick={() => canUpload && fileInputRef.current?.click()}
         style={{
           padding: "40px 24px",
           borderRadius: 12,
-          border: `2px dashed ${isDragging ? "#3b82f6" : isReady ? "#3f3f46" : "#27272a"}`,
+          border: `2px dashed ${isDragging ? "#3b82f6" : canUpload ? "#3f3f46" : "#27272a"}`,
           background: isDragging ? "rgba(59,130,246,0.08)" : "rgba(255,255,255,0.02)",
           textAlign: "center",
-          cursor: isReady ? "pointer" : "not-allowed",
+          cursor: canUpload ? "pointer" : "not-allowed",
           transition: "all 0.2s ease",
           marginBottom: 32,
-          opacity: isReady ? 1 : 0.5,
+          opacity: canUpload ? 1 : 0.5,
         }}
       >
         <input
@@ -260,14 +290,16 @@ export default function Dashboard() {
           accept="video/*"
           onChange={onFileSelect}
           style={{ display: "none" }}
-          disabled={!isReady}
+          disabled={!canUpload}
         />
         <div style={{ fontSize: 32, marginBottom: 8 }}>📤</div>
-        <div style={{ fontSize: 15, fontWeight: 500, color: isReady ? "#d4d4d8" : "#71717a" }}>
-          {isReady ? "Drop a video here, or click to browse" : "Upload disabled — complete setup first"}
+        <div style={{ fontSize: 15, fontWeight: 500, color: canUpload ? "#d4d4d8" : "#71717a" }}>
+          {canUpload
+            ? (r2Ready ? "Drop a video here, or click to browse" : "Drop a video here (max ~4.5MB)")
+            : "Upload disabled — complete setup first"}
         </div>
         <div style={{ fontSize: 12, color: "#71717a", marginTop: 6 }}>
-          MP4, MOV, AVI — any size via Cloudflare R2
+          {r2Ready ? "Any size via Cloudflare R2" : "MP4, MOV, AVI — enable R2 for larger files"}
         </div>
         {uploadProgress > 0 && uploadProgress < 100 && (
           <div style={{ marginTop: 16 }}>
@@ -296,11 +328,11 @@ export default function Dashboard() {
       <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
         <button
           onClick={triggerScan}
-          disabled={loading || !envStatus?.github_ready}
+          disabled={loading || !githubReady}
           style={{
             padding: "10px 20px", borderRadius: 8, border: "1px solid #3f3f46",
-            background: "transparent", color: envStatus?.github_ready ? "#d4d4d8" : "#52525b",
-            fontSize: 13, fontWeight: 500, cursor: (loading || !envStatus?.github_ready) ? "not-allowed" : "pointer"
+            background: "transparent", color: githubReady ? "#d4d4d8" : "#52525b",
+            fontSize: 13, fontWeight: 500, cursor: (loading || !githubReady) ? "not-allowed" : "pointer"
           }}
         >
           🔍 Scan Now
@@ -365,6 +397,21 @@ export default function Dashboard() {
           ))
         )}
       </Section>
+    </div>
+  );
+}
+
+function StatusRow({ label, ready, optional }: { label: string; ready: boolean; optional?: boolean }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+      <div style={{
+        width: 8, height: 8, borderRadius: "50%",
+        background: ready ? "#22c55e" : optional ? "#f59e0b" : "#ef4444"
+      }} />
+      <span style={{ color: "#a1a1aa" }}>{label}</span>
+      <span style={{ color: ready ? "#86efac" : optional ? "#fcd34d" : "#fca5a5", fontSize: 12 }}>
+        {ready ? "Ready" : optional ? "Optional" : "Missing"}
+      </span>
     </div>
   );
 }
