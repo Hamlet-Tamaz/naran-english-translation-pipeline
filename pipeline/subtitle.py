@@ -37,30 +37,22 @@ def format_ass_time(seconds: float) -> str:
     return f"{hours}:{minutes:02d}:{secs:02d}.{centis:02d}"
 
 def scale_timestamps(segments: list, voiceover_duration: float) -> list:
-    """Scale all segment timings proportionally to fit within voiceover duration."""
     if not segments:
         return segments
-
     original_end = max(seg["end"] for seg in segments)
     if original_end <= 0 or voiceover_duration <= 0:
         return segments
-
-    # If voiceover is longer than original, no scaling needed (just clamp)
-    # If voiceover is shorter, scale down proportionally
     scale = min(1.0, voiceover_duration / original_end)
-
     scaled = []
     for seg in segments:
         new_start = seg["start"] * scale
         new_end = min(seg["end"] * scale, voiceover_duration)
-        # Ensure end > start
         if new_end <= new_start:
             new_end = new_start + 0.5
         s = dict(seg)
         s["start"] = new_start
         s["end"] = new_end
         scaled.append(s)
-
     return scaled
 
 def build_ass(translation, output_dir, video_width, video_height, voiceover_duration):
@@ -81,7 +73,8 @@ PlayResY: {video_height}
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
 Style: Naran,DejaVu Sans,{font_size},&H00FFFFFF,&H00808080,&H00000000,&H90000000,-1,0,0,0,100,100,0,0,3,2,0,2,{margin_lr},{margin_lr},{margin_v},1
-Style: Other,DejaVu Sans,{font_size},&H0000FFFF,&H00808080,&H00000000,&H90000000,-1,0,0,0,100,100,0,0,3,2,0,2,{margin_lr},{margin_lr},{margin_v},1
+Style: Kamran,DejaVu Sans,{font_size},&H0000FFFF,&H00808080,&H00000000,&H90000000,-1,0,0,0,100,100,0,0,3,2,0,2,{margin_lr},{margin_lr},{margin_v},1
+Style: Commenter,DejaVu Sans,{font_size},&H00FF8080,&H00808080,&H00000000,&H90000000,-1,0,0,0,100,100,0,0,3,2,0,2,{margin_lr},{margin_lr},{margin_v},1
 Style: Label,DejaVu Sans,{label_size},&H00FFFFFF,&H00808080,&H00000000,&H90000000,-1,0,0,0,100,100,0,0,3,1,0,2,{margin_lr},{margin_lr},{margin_v + font_size + 8},1
 
 [Events]
@@ -90,8 +83,6 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
     dialogues = []
     segments = translation.get("segments", [])
-
-    # Scale timestamps to fit voiceover
     segments = scale_timestamps(segments, voiceover_duration)
 
     for seg in segments:
@@ -103,13 +94,10 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         if not text:
             continue
 
-        style = "Naran" if speaker == "Naran" else "Other"
-
-        # Speaker label
-        label = speaker if speaker == "Naran" else "Commenter"
+        style = speaker if speaker in {"Naran", "Kamran", "Commenter"} else "Naran"
+        label = speaker
         label_text = f"({label})"
 
-        # Karaoke the main text
         words = text.split()
         if len(words) > 1:
             duration = end - start
@@ -126,11 +114,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         start_ass = format_ass_time(start)
         end_ass = format_ass_time(end)
 
-        # Label dialogue (appears above, no karaoke)
         safe_label = label_text.replace("{", "\\{").replace("}", "\\}")
         dialogues.append(f"Dialogue: 0,{start_ass},{end_ass},Label,,0,0,0,,{safe_label}")
-
-        # Main text dialogue
         dialogues.append(f"Dialogue: 0,{start_ass},{end_ass},{style},,0,0,0,,{karaoke_text}")
 
     ass_content = header + "\n".join(dialogues)
@@ -145,10 +130,9 @@ def burn(video_path, translation, voiceover_path, voiceover_duration, output_dir
     width, height = get_video_dimensions(video_path)
     video_duration = get_video_duration(video_path)
 
-    # Build ASS with scaled timestamps
     ass_path = build_ass(translation, output_dir, width, height, voiceover_duration)
 
-    # Pad voiceover to match video duration so full video plays
+    # Pad voiceover to match video duration
     padded_vo = os.path.join(output_dir, "voiceover_padded.m4a")
     if voiceover_duration < video_duration:
         pad_sec = video_duration - voiceover_duration
@@ -183,7 +167,6 @@ def burn(video_path, translation, voiceover_path, voiceover_duration, output_dir
     except subprocess.CalledProcessError as e:
         print(f"  ffmpeg subtitle burn failed: {e}")
         print(f"  stderr: {e.stderr.decode() if e.stderr else 'N/A'}")
-        # Fallback
         cmd_fallback = [
             "ffmpeg", "-y",
             "-i", video_path,
