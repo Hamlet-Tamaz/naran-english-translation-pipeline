@@ -33,9 +33,9 @@ def main():
     print("  [3/5] Translating to English...")
     translation = translate(transcript, out_dir)
     print("  [4/5] Generating voiceover...")
-    voiceover = gen_voiceover(translation["full_text"], out_dir)
+    voiceover_path, voiceover_duration = gen_voiceover(translation["full_text"], out_dir)
     print("  [5/5] Burning subtitles & rendering...")
-    final = burn(video_path, translation, voiceover, out_dir)
+    final = burn(video_path, translation, voiceover_path, voiceover_duration, out_dir)
     print("  Generating caption...")
     gen_caption(translation, out_dir)
     meta = {
@@ -43,6 +43,7 @@ def main():
         "original": video_path,
         "output_dir": out_dir,
         "final_video": final,
+        "voiceover_duration": voiceover_duration,
         "status": "completed"
     }
     with open(os.path.join(out_dir, "metadata.json"), "w") as f:
