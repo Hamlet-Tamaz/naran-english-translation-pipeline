@@ -5,3 +5,6 @@ moviepy
 srt
 openai
 pydub
+torch
+torchaudio
+pyannote.audio
