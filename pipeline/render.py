@@ -33,7 +33,7 @@ def main():
     print("  [3/5] Translating to English...")
     translation = translate(transcript, out_dir)
     print("  [4/5] Generating voiceover...")
-    voiceover_path, voiceover_duration = gen_voiceover(translation["full_text"], out_dir)
+    voiceover_path, voiceover_duration = gen_voiceover(translation, out_dir)
     print("  [5/5] Burning subtitles & rendering...")
     final = burn(video_path, translation, voiceover_path, voiceover_duration, out_dir)
     print("  Generating caption...")
