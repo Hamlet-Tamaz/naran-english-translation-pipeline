@@ -67,147 +67,147 @@
         50814
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.3327117528670873,
+      "avg_logprob": -0.3327240381485377,
       "compression_ratio": 2.0660592255125283,
-      "no_speech_prob": 0.20077234506607056,
+      "no_speech_prob": 0.20077140629291534,
       "words": [
         {
           "word": " Камрана",
           "start": 0.0,
           "end": 0.68,
-          "probability": 0.475223608314991
+          "probability": 0.47522081434726715
         },
         {
           "word": " Размовар",
           "start": 0.68,
           "end": 1.08,
-          "probability": 0.571292112270991
+          "probability": 0.5712842146555582
         },
         {
           "word": " приводит",
           "start": 1.08,
           "end": 1.56,
-          "probability": 0.7421901027361552
+          "probability": 0.742177834113439
         },
         {
           "word": " еще",
           "start": 1.56,
           "end": 1.86,
-          "probability": 0.6293009519577026
+          "probability": 0.6292863488197327
         },
         {
           "word": " один",
           "start": 1.86,
           "end": 2.06,
-          "probability": 0.9833425283432007
+          "probability": 0.9833225011825562
         },
         {
           "word": " страна",
           "start": 2.06,
           "end": 2.5,
-          "probability": 0.5919760018587112
+          "probability": 0.5919666588306427
         },
         {
           "word": " аргумент,",
           "start": 2.5,
           "end": 2.96,
-          "probability": 0.8899199217557907
+          "probability": 0.889904335141182
         },
         {
           "word": " и",
           "start": 3.34,
           "end": 3.38,
-          "probability": 0.5644817352294922
+          "probability": 0.5644690990447998
         },
         {
           "word": " Сусский",
           "start": 3.38,
           "end": 3.76,
-          "probability": 0.4627724587917328
+          "probability": 0.4627689719200134
         },
         {
           "word": " встретил",
           "start": 3.76,
           "end": 4.2,
-          "probability": 0.9597750902175903
+          "probability": 0.9597664177417755
         },
         {
           "word": " армян,",
           "start": 4.2,
           "end": 4.52,
-          "probability": 0.9141902327537537
+          "probability": 0.914172887802124
         },
         {
           "word": " а",
           "start": 4.7,
           "end": 4.78,
-          "probability": 0.9710361957550049
+          "probability": 0.9710103869438171
         },
         {
           "word": " в",
           "start": 4.78,
           "end": 4.98,
-          "probability": 0.5327189564704895
+          "probability": 0.5327171683311462
         },
         {
           "word": " Библии,",
           "start": 4.98,
           "end": 5.32,
-          "probability": 0.8908447176218033
+          "probability": 0.8908281326293945
         },
         {
           "word": " как",
           "start": 5.34,
           "end": 5.5,
-          "probability": 0.5667328834533691
+          "probability": 0.5667287707328796
         },
         {
           "word": " бы",
           "start": 5.5,
           "end": 5.64,
-          "probability": 0.8413812518119812
+          "probability": 0.8413670063018799
         },
         {
           "word": " вообще",
           "start": 5.64,
           "end": 5.96,
-          "probability": 0.9162192940711975
+          "probability": 0.9162037968635559
         },
         {
           "word": " нет",
           "start": 5.96,
           "end": 6.22,
-          "probability": 0.7161422371864319
+          "probability": 0.7161305546760559
         },
         {
           "word": " армений,",
           "start": 6.22,
           "end": 6.68,
-          "probability": 0.8509766260782877
+          "probability": 0.8509601155916849
         },
         {
           "word": " значит",
           "start": 6.94,
           "end": 7.14,
-          "probability": 0.8708086013793945
+          "probability": 0.8708016276359558
         },
         {
           "word": " древняя",
           "start": 7.14,
           "end": 7.64,
-          "probability": 0.5903803408145905
+          "probability": 0.5903751651446024
         },
         {
           "word": " армения",
           "start": 7.64,
           "end": 8.06,
-          "probability": 0.8855288028717041
+          "probability": 0.8855136831601461
         },
         {
           "word": " выдумана.",
           "start": 8.06,
           "end": 8.84,
-          "probability": 0.7764820456504822
+          "probability": 0.7764760057131449
         }
       ]
     },
@@ -236,57 +236,57 @@
         50964
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.3327117528670873,
+      "avg_logprob": -0.3327240381485377,
       "compression_ratio": 2.0660592255125283,
-      "no_speech_prob": 0.20077234506607056,
+      "no_speech_prob": 0.20077140629291534,
       "words": [
         {
           "word": " Но",
           "start": 9.2,
           "end": 9.28,
-          "probability": 0.9648751616477966
+          "probability": 0.9648506045341492
         },
         {
           "word": " существование",
           "start": 9.28,
           "end": 10.0,
-          "probability": 0.7904808819293976
+          "probability": 0.7904758453369141
         },
         {
           "word": " стран",
           "start": 10.0,
           "end": 10.36,
-          "probability": 0.9892654418945312
+          "probability": 0.989254355430603
         },
         {
           "word": " и",
           "start": 10.36,
           "end": 10.62,
-          "probability": 0.9420385360717773
+          "probability": 0.9420136213302612
         },
         {
           "word": " народов",
           "start": 10.62,
           "end": 11.08,
-          "probability": 0.9190208315849304
+          "probability": 0.9190102815628052
         },
         {
           "word": " так",
           "start": 11.08,
           "end": 11.26,
-          "probability": 0.8239051103591919
+          "probability": 0.8238893151283264
         },
         {
           "word": " не",
           "start": 11.26,
           "end": 11.48,
-          "probability": 0.9926906228065491
+          "probability": 0.9926714897155762
         },
         {
           "word": " устанавливают.",
           "start": 11.48,
           "end": 12.28,
-          "probability": 0.9556879550218582
+          "probability": 0.9556745439767838
         }
       ]
     },
@@ -333,93 +333,93 @@
         51214
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.3327117528670873,
+      "avg_logprob": -0.3327240381485377,
       "compression_ratio": 2.0660592255125283,
-      "no_speech_prob": 0.20077234506607056,
+      "no_speech_prob": 0.20077140629291534,
       "words": [
         {
           "word": " А",
           "start": 12.58,
           "end": 12.66,
-          "probability": 0.7608908414840698
+          "probability": 0.7608816623687744
         },
         {
           "word": " теперь",
           "start": 12.66,
           "end": 12.8,
-          "probability": 0.995718777179718
+          "probability": 0.9957079887390137
         },
         {
           "word": " давайте",
           "start": 12.8,
           "end": 13.02,
-          "probability": 0.8845614194869995
+          "probability": 0.8845562934875488
         },
         {
           "word": " этот",
           "start": 13.02,
           "end": 13.26,
-          "probability": 0.922227680683136
+          "probability": 0.9222104549407959
         },
         {
           "word": " миф",
           "start": 13.26,
           "end": 13.54,
-          "probability": 0.7679910957813263
+          "probability": 0.7679799199104309
         },
         {
           "word": " о",
           "start": 13.54,
           "end": 13.64,
-          "probability": 0.9613007307052612
+          "probability": 0.9612752795219421
         },
         {
           "word": " Велико",
           "start": 13.64,
           "end": 14.02,
-          "probability": 0.6948326900601387
+          "probability": 0.6948208808898926
         },
         {
           "word": "-Армении,",
           "start": 14.02,
           "end": 14.28,
-          "probability": 0.6143880367279053
+          "probability": 0.6143792390823364
         },
         {
           "word": " состав,",
           "start": 14.6,
           "end": 14.84,
-          "probability": 0.9198167324066162
+          "probability": 0.9198139905929565
         },
         {
           "word": " который",
           "start": 14.94,
           "end": 15.12,
-          "probability": 0.771923303604126
+          "probability": 0.771911084651947
         },
         {
           "word": " входил",
           "start": 15.12,
           "end": 15.42,
-          "probability": 0.7840153276920319
+          "probability": 0.7840107679367065
         },
         {
           "word": " и",
           "start": 15.42,
           "end": 15.54,
-          "probability": 0.41148972511291504
+          "probability": 0.41148924827575684
         },
         {
           "word": " Русалима",
           "start": 15.54,
           "end": 15.96,
-          "probability": 0.8341989040374755
+          "probability": 0.8341843485832214
         },
         {
           "word": " развеи.",
           "start": 15.96,
           "end": 16.36,
-          "probability": 0.7209916710853577
+          "probability": 0.720980683962504
         }
       ]
     },
@@ -473,93 +473,93 @@
         51464
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.3327117528670873,
+      "avg_logprob": -0.3327240381485377,
       "compression_ratio": 2.0660592255125283,
-      "no_speech_prob": 0.20077234506607056,
+      "no_speech_prob": 0.20077140629291534,
       "words": [
         {
           "word": " По",
           "start": 16.92,
           "end": 17.1,
-          "probability": 0.6630043387413025
+          "probability": 0.6630030274391174
         },
         {
           "word": " утверждению",
           "start": 17.1,
           "end": 17.4,
-          "probability": 0.8941768407821655
+          "probability": 0.8941672593355179
         },
         {
           "word": " Википедии,",
           "start": 17.4,
           "end": 17.88,
-          "probability": 0.8088090538978576
+          "probability": 0.8087969660758972
         },
         {
           "word": " Велико",
           "start": 18.1,
           "end": 18.4,
-          "probability": 0.9626512378454208
+          "probability": 0.962630420923233
         },
         {
           "word": "-Армении",
           "start": 18.4,
           "end": 18.72,
-          "probability": 0.8607914090156555
+          "probability": 0.8607730388641357
         },
         {
           "word": " существовалась",
           "start": 18.72,
           "end": 19.24,
-          "probability": 0.7617660562197367
+          "probability": 0.7617528935273489
         },
         {
           "word": " четвертого",
           "start": 19.24,
           "end": 19.66,
-          "probability": 0.8896618783473969
+          "probability": 0.889650285243988
         },
         {
           "word": " века,",
           "start": 19.66,
           "end": 19.92,
-          "probability": 0.9186129868030548
+          "probability": 0.918604850769043
         },
         {
           "word": " то",
           "start": 20.08,
           "end": 20.22,
-          "probability": 0.8934118151664734
+          "probability": 0.8933969736099243
         },
         {
           "word": " наши",
           "start": 20.22,
           "end": 20.44,
-          "probability": 0.8735055923461914
+          "probability": 0.8734999895095825
         },
         {
           "word": " рей",
           "start": 20.44,
           "end": 20.62,
-          "probability": 0.24894190207123756
+          "probability": 0.2489437609910965
         },
         {
           "word": " примерно",
           "start": 20.62,
           "end": 21.02,
-          "probability": 0.06002526730298996
+          "probability": 0.060023557394742966
         },
         {
           "word": " по",
           "start": 21.02,
           "end": 21.18,
-          "probability": 0.40421146154403687
+          "probability": 0.4042111337184906
         },
         {
           "word": " пятой.",
           "start": 21.18,
           "end": 21.5,
-          "probability": 0.9128632843494415
+          "probability": 0.9128531217575073
         }
       ]
     },
@@ -617,135 +617,135 @@
         51764
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.3327117528670873,
+      "avg_logprob": -0.3327240381485377,
       "compression_ratio": 2.0660592255125283,
-      "no_speech_prob": 0.20077234506607056,
+      "no_speech_prob": 0.20077140629291534,
       "words": [
         {
           "word": " И",
           "start": 21.76,
           "end": 21.88,
-          "probability": 0.9773373603820801
+          "probability": 0.9773123264312744
         },
         {
           "word": " где",
           "start": 21.88,
           "end": 22.0,
-          "probability": 0.9898974895477295
+          "probability": 0.9898809790611267
         },
         {
           "word": "-то",
           "start": 22.0,
           "end": 22.1,
-          "probability": 0.9523400664329529
+          "probability": 0.952317863702774
         },
         {
           "word": " посередине",
           "start": 22.1,
           "end": 22.56,
-          "probability": 0.8679233342409134
+          "probability": 0.8679104298353195
         },
         {
           "word": " вот",
           "start": 22.56,
           "end": 22.68,
-          "probability": 0.7987796068191528
+          "probability": 0.7987671494483948
         },
         {
           "word": " этих",
           "start": 22.68,
           "end": 22.82,
-          "probability": 0.6002473831176758
+          "probability": 0.600241482257843
         },
         {
           "word": " вот",
           "start": 22.82,
           "end": 22.94,
-          "probability": 0.9009658098220825
+          "probability": 0.9009472131729126
         },
         {
           "word": " 80",
           "start": 22.94,
           "end": 23.12,
-          "probability": 0.3715921938419342
+          "probability": 0.3715873658657074
         },
         {
           "word": " лет",
           "start": 23.12,
           "end": 23.56,
-          "probability": 0.6319946050643921
+          "probability": 0.631974995136261
         },
         {
           "word": " родился",
           "start": 23.56,
           "end": 24.32,
-          "probability": 0.946678876876831
+          "probability": 0.9466696083545685
         },
         {
           "word": " и",
           "start": 24.32,
           "end": 24.82,
-          "probability": 0.4785313010215759
+          "probability": 0.47852078080177307
         },
         {
           "word": " в",
           "start": 24.82,
           "end": 24.98,
-          "probability": 0.8000144362449646
+          "probability": 0.800010085105896
         },
         {
           "word": " Вифлене,",
           "start": 24.98,
           "end": 25.24,
-          "probability": 0.5101679638028145
+          "probability": 0.5101666003465652
         },
         {
           "word": " кстати,",
           "start": 25.34,
           "end": 25.54,
-          "probability": 0.9793689250946045
+          "probability": 0.9793602228164673
         },
         {
           "word": " это",
           "start": 25.96,
           "end": 26.08,
-          "probability": 0.8584239482879639
+          "probability": 0.8584091067314148
         },
         {
           "word": " рядом",
           "start": 26.08,
           "end": 26.24,
-          "probability": 0.9901390075683594
+          "probability": 0.9901365041732788
         },
         {
           "word": " с",
           "start": 26.24,
           "end": 26.38,
-          "probability": 0.934673547744751
+          "probability": 0.9346508383750916
         },
         {
           "word": " Ирусалимом.",
           "start": 26.38,
           "end": 26.82,
-          "probability": 0.7739502290884653
+          "probability": 0.7739412089188894
         },
         {
           "word": " И",
           "start": 27.2,
           "end": 27.38,
-          "probability": 0.9589043855667114
+          "probability": 0.9588803052902222
         },
         {
           "word": " Сус",
           "start": 27.38,
           "end": 27.48,
-          "probability": 0.8269645571708679
+          "probability": 0.8269481360912323
         },
         {
           "word": " Христос.",
           "start": 27.48,
           "end": 28.02,
-          "probability": 0.7025724411010742
+          "probability": 0.702567583322525
         }
       ]
     },
@@ -817,159 +817,159 @@
         50814
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.34747050752575764,
+      "avg_logprob": -0.3474811835577024,
       "compression_ratio": 2.075880758807588,
-      "no_speech_prob": 0.07537779211997986,
+      "no_speech_prob": 0.0753779262304306,
       "words": [
         {
           "word": " Как",
           "start": 28.02,
           "end": 28.4,
-          "probability": 0.4295375943183899
+          "probability": 0.4295366108417511
         },
         {
           "word": " ни",
           "start": 28.4,
           "end": 28.58,
-          "probability": 0.8178643584251404
+          "probability": 0.8178530931472778
         },
         {
           "word": " странно",
           "start": 28.58,
           "end": 28.96,
-          "probability": 0.9860439300537109
+          "probability": 0.9860338866710663
         },
         {
           "word": " ни",
           "start": 28.96,
           "end": 29.32,
-          "probability": 0.4986260235309601
+          "probability": 0.49861761927604675
         },
         {
           "word": " один",
           "start": 29.32,
           "end": 29.6,
-          "probability": 0.9521737694740295
+          "probability": 0.9521567821502686
         },
         {
           "word": " арминин",
           "start": 29.6,
           "end": 30.26,
-          "probability": 0.4802846163511276
+          "probability": 0.4802809804677963
         },
         {
           "word": " не",
           "start": 30.26,
           "end": 30.4,
-          "probability": 0.7299925088882446
+          "probability": 0.7299843430519104
         },
         {
           "word": " встретился",
           "start": 30.4,
           "end": 30.7,
-          "probability": 0.9775511026382446
+          "probability": 0.9775440990924835
         },
         {
           "word": " Иисусу.",
           "start": 30.7,
           "end": 31.22,
-          "probability": 0.6426291838288307
+          "probability": 0.6426197588443756
         },
         {
           "word": " В",
           "start": 31.48,
           "end": 31.58,
-          "probability": 0.8973351120948792
+          "probability": 0.897325336933136
         },
         {
           "word": " Библии",
           "start": 31.58,
           "end": 31.88,
-          "probability": 0.9281031936407089
+          "probability": 0.9280823767185211
         },
         {
           "word": " нет",
           "start": 31.88,
           "end": 32.02,
-          "probability": 0.8582088351249695
+          "probability": 0.8581881523132324
         },
         {
           "word": " ничего",
           "start": 32.02,
           "end": 32.38,
-          "probability": 0.9381158947944641
+          "probability": 0.9380986094474792
         },
         {
           "word": " армянных.",
           "start": 32.38,
           "end": 32.92,
-          "probability": 0.7806323915719986
+          "probability": 0.7806202173233032
         },
         {
           "word": " Нет",
           "start": 33.12,
           "end": 33.22,
-          "probability": 0.8196244835853577
+          "probability": 0.8196143507957458
         },
         {
           "word": " никакой",
           "start": 33.22,
           "end": 33.76,
-          "probability": 0.887891560792923
+          "probability": 0.8878786265850067
         },
         {
           "word": " великой",
           "start": 33.76,
           "end": 34.08,
-          "probability": 0.7988304098447164
+          "probability": 0.7988192637761434
         },
         {
           "word": " арминь",
           "start": 34.08,
           "end": 34.4,
-          "probability": 0.7310964316129684
+          "probability": 0.7310853078961372
         },
         {
           "word": " есть",
           "start": 34.4,
           "end": 34.62,
-          "probability": 0.7753530144691467
+          "probability": 0.7753372192382812
         },
         {
           "word": " десятки",
           "start": 34.62,
           "end": 35.12,
-          "probability": 0.9381860494613647
+          "probability": 0.9381733238697052
         },
         {
           "word": " государственных",
           "start": 35.12,
           "end": 35.64,
-          "probability": 0.6831886718670527
+          "probability": 0.6831818421681722
         },
         {
           "word": " национальности",
           "start": 35.64,
           "end": 36.18,
-          "probability": 0.6536933481693268
+          "probability": 0.6536887437105179
         },
         {
           "word": " и",
           "start": 36.18,
           "end": 36.32,
-          "probability": 0.6162124872207642
+          "probability": 0.6162086129188538
         },
         {
           "word": " не",
           "start": 36.32,
           "end": 36.38,
-          "probability": 0.1532721221446991
+          "probability": 0.1532718390226364
         },
         {
           "word": " заэтноцев.",
           "start": 36.38,
           "end": 36.9,
-          "probability": 0.36182478070259094
+          "probability": 0.36182328313589096
         }
       ]
     },
@@ -1025,111 +1025,111 @@
         51064
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.34747050752575764,
+      "avg_logprob": -0.3474811835577024,
       "compression_ratio": 2.075880758807588,
-      "no_speech_prob": 0.07537779211997986,
+      "no_speech_prob": 0.0753779262304306,
       "words": [
         {
           "word": " Но",
           "start": 37.2,
           "end": 37.26,
-          "probability": 0.7833353877067566
+          "probability": 0.7833228707313538
         },
         {
           "word": " нет",
           "start": 37.26,
           "end": 37.38,
-          "probability": 0.6083648204803467
+          "probability": 0.608357310295105
         },
         {
           "word": " ни",
           "start": 37.38,
           "end": 37.56,
-          "probability": 0.7355541586875916
+          "probability": 0.7355396151542664
         },
         {
           "word": " армян,",
           "start": 37.56,
           "end": 37.84,
-          "probability": 0.7831242481867472
+          "probability": 0.7831111351648966
         },
         {
           "word": " ни",
           "start": 37.84,
           "end": 38.04,
-          "probability": 0.996117115020752
+          "probability": 0.9961115717887878
         },
         {
           "word": " арминь,",
           "start": 38.04,
           "end": 38.26,
-          "probability": 0.8191432952880859
+          "probability": 0.8191320300102234
         },
         {
           "word": " ни",
           "start": 38.44,
           "end": 38.44,
-          "probability": 0.7452817559242249
+          "probability": 0.7452676892280579
         },
         {
           "word": " надо",
           "start": 38.44,
           "end": 38.58,
-          "probability": 0.5618771314620972
+          "probability": 0.5618777871131897
         },
         {
           "word": " пихать",
           "start": 38.58,
           "end": 38.86,
-          "probability": 0.7696068088213602
+          "probability": 0.7695995370546976
         },
         {
           "word": " это",
           "start": 38.86,
           "end": 39.02,
-          "probability": 0.2538106441497803
+          "probability": 0.2538053095340729
         },
         {
           "word": " там,",
           "start": 39.02,
           "end": 39.16,
-          "probability": 0.8624006509780884
+          "probability": 0.8623958230018616
         },
         {
           "word": " написано",
           "start": 39.22,
           "end": 39.54,
-          "probability": 0.9227115511894226
+          "probability": 0.922699362039566
         },
         {
           "word": " «Арорадские",
           "start": 39.54,
           "end": 40.12,
-          "probability": 0.45907963315645856
+          "probability": 0.4590781976779302
         },
         {
           "word": " горы».",
           "start": 40.12,
           "end": 40.84,
-          "probability": 0.8623922268549601
+          "probability": 0.8623825311660767
         },
         {
           "word": " Это",
           "start": 40.84,
           "end": 41.02,
-          "probability": 0.9558350443840027
+          "probability": 0.9558109641075134
         },
         {
           "word": " географический",
           "start": 41.02,
           "end": 41.6,
-          "probability": 0.91972915828228
+          "probability": 0.9197158515453339
         },
         {
           "word": " термин.",
           "start": 41.6,
           "end": 41.96,
-          "probability": 0.9237808585166931
+          "probability": 0.9237683216730753
         }
       ]
     },
@@ -1187,135 +1187,135 @@
         51464
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.34747050752575764,
+      "avg_logprob": -0.3474811835577024,
       "compression_ratio": 2.075880758807588,
-      "no_speech_prob": 0.07537779211997986,
+      "no_speech_prob": 0.0753779262304306,
       "words": [
         {
           "word": " Ивангелий",
           "start": 42.26,
           "end": 42.84,
-          "probability": 0.4693650960922241
+          "probability": 0.4693655550479889
         },
         {
           "word": " не",
           "start": 42.84,
           "end": 43.08,
-          "probability": 0.46171215176582336
+          "probability": 0.4617091417312622
         },
         {
           "word": " является",
           "start": 43.08,
           "end": 43.5,
-          "probability": 0.9977737069129944
+          "probability": 0.9977700710296631
         },
         {
           "word": " перечнем",
           "start": 43.5,
           "end": 44.02,
-          "probability": 0.6704464852809906
+          "probability": 0.6704383889834086
         },
         {
           "word": " всех",
           "start": 44.02,
           "end": 44.22,
-          "probability": 0.9884662628173828
+          "probability": 0.9884520173072815
         },
         {
           "word": " народов",
           "start": 44.22,
           "end": 44.72,
-          "probability": 0.991706520318985
+          "probability": 0.9916984736919403
         },
         {
           "word": " ближнего",
           "start": 44.72,
           "end": 45.06,
-          "probability": 0.9122931957244873
+          "probability": 0.9122825066248575
         },
         {
           "word": " востока.",
           "start": 45.06,
           "end": 45.64,
-          "probability": 0.844724198182424
+          "probability": 0.8447141249974569
         },
         {
           "word": " Осутствие",
           "start": 45.98,
           "end": 46.38,
-          "probability": 0.5134959667921066
+          "probability": 0.5134937291344007
         },
         {
           "word": " народа",
           "start": 46.38,
           "end": 46.86,
-          "probability": 0.8314723968505859
+          "probability": 0.8314673006534576
         },
         {
           "word": " в",
           "start": 46.86,
           "end": 46.92,
-          "probability": 0.9499485492706299
+          "probability": 0.9499238133430481
         },
         {
           "word": " рассказе",
           "start": 46.92,
           "end": 47.38,
-          "probability": 0.9034534394741058
+          "probability": 0.9034519493579865
         },
         {
           "word": " о",
           "start": 47.38,
           "end": 47.54,
-          "probability": 0.49044692516326904
+          "probability": 0.49044111371040344
         },
         {
           "word": " жизни",
           "start": 47.54,
           "end": 47.74,
-          "probability": 0.8116216659545898
+          "probability": 0.811615526676178
         },
         {
           "word": " Христа",
           "start": 47.74,
           "end": 48.24,
-          "probability": 0.6679951548576355
+          "probability": 0.6679884592692057
         },
         {
           "word": " не",
           "start": 48.24,
           "end": 48.44,
-          "probability": 0.9261553883552551
+          "probability": 0.9261412024497986
         },
         {
           "word": " означает",
           "start": 48.44,
           "end": 48.94,
-          "probability": 0.995026558637619
+          "probability": 0.9950214624404907
         },
         {
           "word": " его",
           "start": 48.94,
           "end": 49.18,
-          "probability": 0.9514257907867432
+          "probability": 0.9514034390449524
         },
         {
           "word": " отсутствие",
           "start": 49.18,
           "end": 49.68,
-          "probability": 0.6487298707167307
+          "probability": 0.6487288524707159
         },
         {
           "word": " в",
           "start": 49.68,
           "end": 49.8,
-          "probability": 0.8565983772277832
+          "probability": 0.8565843105316162
         },
         {
           "word": " истории.",
           "start": 49.8,
           "end": 50.2,
-          "probability": 0.9393788576126099
+          "probability": 0.939373254776001
         }
       ]
     },
@@ -1356,81 +1356,81 @@
         50614
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.3308877525089672,
+      "avg_logprob": -0.33089919660076406,
       "compression_ratio": 1.9175257731958764,
-      "no_speech_prob": 0.6051930785179138,
+      "no_speech_prob": 0.6051943898200989,
       "words": [
         {
           "word": " Тем",
           "start": 50.2,
           "end": 50.76,
-          "probability": 0.20689626038074493
+          "probability": 0.20689797401428223
         },
         {
           "word": " более",
           "start": 50.76,
           "end": 51.06,
-          "probability": 0.9987531900405884
+          "probability": 0.9987437129020691
         },
         {
           "word": " название",
           "start": 51.06,
           "end": 51.6,
-          "probability": 0.8047962188720703
+          "probability": 0.8047839105129242
         },
         {
           "word": " арминьи",
           "start": 51.6,
           "end": 52.04,
-          "probability": 0.4190212219953537
+          "probability": 0.4190153568983078
         },
         {
           "word": " фиксируется",
           "start": 52.04,
           "end": 52.62,
-          "probability": 0.8846423476934433
+          "probability": 0.8846317529678345
         },
         {
           "word": " примерно",
           "start": 52.62,
           "end": 52.96,
-          "probability": 0.8587642312049866
+          "probability": 0.8587615489959717
         },
         {
           "word": " за",
           "start": 52.96,
           "end": 53.26,
-          "probability": 0.9766879677772522
+          "probability": 0.9766666293144226
         },
         {
           "word": " 5",
           "start": 53.26,
           "end": 53.46,
-          "probability": 0.65061354637146
+          "probability": 0.6506059169769287
         },
         {
           "word": " веков",
           "start": 53.46,
           "end": 53.9,
-          "probability": 0.9073681632677714
+          "probability": 0.9073523680369059
         },
         {
           "word": " до",
           "start": 53.9,
           "end": 54.08,
-          "probability": 0.5804061889648438
+          "probability": 0.5803892016410828
         },
         {
           "word": " рождения",
           "start": 54.08,
           "end": 54.5,
-          "probability": 0.828129768371582
+          "probability": 0.8281245231628418
         },
         {
           "word": " Иисуса.",
           "start": 54.5,
           "end": 55.36,
-          "probability": 0.7308569749196371
+          "probability": 0.7308532198270162
         }
       ]
     },
@@ -1471,75 +1471,75 @@
         50864
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.3308877525089672,
+      "avg_logprob": -0.33089919660076406,
       "compression_ratio": 1.9175257731958764,
-      "no_speech_prob": 0.6051930785179138,
+      "no_speech_prob": 0.6051943898200989,
       "words": [
         {
           "word": " Около",
           "start": 55.82,
           "end": 56.1,
-          "probability": 0.7917111913363138
+          "probability": 0.7917035420735677
         },
         {
           "word": " 520",
           "start": 56.1,
           "end": 56.76,
-          "probability": 0.9718214273452759
+          "probability": 0.9717968106269836
         },
         {
           "word": " года",
           "start": 56.76,
           "end": 57.12,
-          "probability": 0.8772125244140625
+          "probability": 0.8771993517875671
         },
         {
           "word": " до",
           "start": 57.12,
           "end": 57.36,
-          "probability": 0.9881342053413391
+          "probability": 0.9881110191345215
         },
         {
           "word": " нашей",
           "start": 57.36,
           "end": 57.66,
-          "probability": 0.951036810874939
+          "probability": 0.9510279893875122
         },
         {
           "word": " эры",
           "start": 57.66,
           "end": 58.14,
-          "probability": 0.782242625951767
+          "probability": 0.7822311222553253
         },
         {
           "word": " дарии",
           "start": 58.14,
           "end": 58.62,
-          "probability": 0.7427741090456644
+          "probability": 0.7427642345428467
         },
         {
           "word": " первая",
           "start": 58.62,
           "end": 59.06,
-          "probability": 0.3270244598388672
+          "probability": 0.3270232677459717
         },
         {
           "word": " оставила",
           "start": 59.06,
           "end": 59.6,
-          "probability": 0.8363649547100067
+          "probability": 0.8363559544086456
         },
         {
           "word": " бихистусскую",
           "start": 59.6,
           "end": 60.32,
-          "probability": 0.5428740978240967
+          "probability": 0.542870557308197
         },
         {
           "word": " надпись.",
           "start": 60.32,
           "end": 60.8,
-          "probability": 0.6576442817846934
+          "probability": 0.6576410631338755
         }
       ]
     },
@@ -1581,57 +1581,57 @@
         51114
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.3308877525089672,
+      "avg_logprob": -0.33089919660076406,
       "compression_ratio": 1.9175257731958764,
-      "no_speech_prob": 0.6051930785179138,
+      "no_speech_prob": 0.6051943898200989,
       "words": [
         {
           "word": " Дринеперсиском",
           "start": 61.18,
           "end": 61.9,
-          "probability": 0.5940817669034004
+          "probability": 0.5940755382180214
         },
         {
           "word": " тексте",
           "start": 61.9,
           "end": 62.32,
-          "probability": 0.6643657684326172
+          "probability": 0.6643561323483785
         },
         {
           "word": " страна",
           "start": 62.32,
           "end": 62.66,
-          "probability": 0.7264745235443115
+          "probability": 0.7264690697193146
         },
         {
           "word": " называется",
           "start": 62.66,
           "end": 63.12,
-          "probability": 0.9341463446617126
+          "probability": 0.9341408014297485
         },
         {
           "word": " «Армина",
           "start": 63.12,
           "end": 63.68,
-          "probability": 0.5439038410782814
+          "probability": 0.5438966378569603
         },
         {
           "word": " о",
           "start": 63.68,
           "end": 63.92,
-          "probability": 0.5883586406707764
+          "probability": 0.5883562564849854
         },
         {
           "word": " южителя",
           "start": 63.92,
           "end": 64.38,
-          "probability": 0.6827080547809601
+          "probability": 0.6827002465724945
         },
         {
           "word": " Армении».",
           "start": 64.38,
           "end": 65.5,
-          "probability": 0.5125809535384178
+          "probability": 0.5125790312886238
         }
       ]
     },
@@ -1696,117 +1696,117 @@
         51464
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.3308877525089672,
+      "avg_logprob": -0.33089919660076406,
       "compression_ratio": 1.9175257731958764,
-      "no_speech_prob": 0.6051930785179138,
+      "no_speech_prob": 0.6051943898200989,
       "words": [
         {
           "word": " Инциклопедия",
           "start": 65.5,
           "end": 66.26,
-          "probability": 0.7920266262122563
+          "probability": 0.7920178813593728
         },
         {
           "word": " Ираника",
           "start": 66.26,
           "end": 66.84,
-          "probability": 0.6953913768132528
+          "probability": 0.6953816016515096
         },
         {
           "word": " переводит",
           "start": 66.84,
           "end": 67.34,
-          "probability": 0.9798002044359843
+          "probability": 0.979784627755483
         },
         {
           "word": " последнее",
           "start": 67.34,
           "end": 67.96,
-          "probability": 0.7673830091953278
+          "probability": 0.7673767805099487
         },
         {
           "word": " как",
           "start": 67.96,
           "end": 68.14,
-          "probability": 0.8241447806358337
+          "probability": 0.8241289854049683
         },
         {
           "word": " армянья.",
           "start": 68.14,
           "end": 68.88,
-          "probability": 0.49013543874025345
+          "probability": 0.4901275709271431
         },
         {
           "word": " Теперь",
           "start": 69.0,
           "end": 69.24,
-          "probability": 0.9728296399116516
+          "probability": 0.9728149771690369
         },
         {
           "word": " к",
           "start": 69.24,
           "end": 69.4,
-          "probability": 0.7712249755859375
+          "probability": 0.7712240219116211
         },
         {
           "word": " утверждению",
           "start": 69.4,
           "end": 69.9,
-          "probability": 0.9590041935443878
+          "probability": 0.9589936137199402
         },
         {
           "word": " Камрана,",
           "start": 69.9,
           "end": 70.5,
-          "probability": 0.590294860303402
+          "probability": 0.5902898609638214
         },
         {
           "word": " что",
           "start": 70.56,
           "end": 70.66,
-          "probability": 0.9835405945777893
+          "probability": 0.9835145473480225
         },
         {
           "word": " в",
           "start": 70.66,
           "end": 70.84,
-          "probability": 0.5331023335456848
+          "probability": 0.5331050157546997
         },
         {
           "word": " Библии",
           "start": 70.84,
           "end": 71.12,
-          "probability": 0.9062079042196274
+          "probability": 0.9061871021986008
         },
         {
           "word": " есть",
           "start": 71.12,
           "end": 71.36,
-          "probability": 0.9855374693870544
+          "probability": 0.9855093359947205
         },
         {
           "word": " арорад,",
           "start": 71.36,
           "end": 71.76,
-          "probability": 0.1894785650074482
+          "probability": 0.1894777724519372
         },
         {
           "word": " но",
           "start": 71.94,
           "end": 72.0,
-          "probability": 0.9708375334739685
+          "probability": 0.9708134531974792
         },
         {
           "word": " нет",
           "start": 72.0,
           "end": 72.18,
-          "probability": 0.8565065264701843
+          "probability": 0.8564853072166443
         },
         {
           "word": " армений.",
           "start": 72.18,
           "end": 72.59,
-          "probability": 0.7804529865582784
+          "probability": 0.7804393768310547
         }
       ]
     },
@@ -1839,63 +1839,63 @@
         51664
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.3308877525089672,
+      "avg_logprob": -0.33089919660076406,
       "compression_ratio": 1.9175257731958764,
-      "no_speech_prob": 0.6051930785179138,
+      "no_speech_prob": 0.6051943898200989,
       "words": [
         {
           "word": " Даже",
           "start": 73.06,
           "end": 73.24,
-          "probability": 0.9812088012695312
+          "probability": 0.9812053442001343
         },
         {
           "word": " это",
           "start": 73.24,
           "end": 73.6,
-          "probability": 0.8727496862411499
+          "probability": 0.8727354407310486
         },
         {
           "word": " неверно,",
           "start": 73.6,
           "end": 74.1,
-          "probability": 0.6198444366455078
+          "probability": 0.6198339859644572
         },
         {
           "word": " если",
           "start": 74.16,
           "end": 74.32,
-          "probability": 0.9966109395027161
+          "probability": 0.9966017007827759
         },
         {
           "word": " говорить",
           "start": 74.32,
           "end": 74.7,
-          "probability": 0.9971279501914978
+          "probability": 0.9971238970756531
         },
         {
           "word": " о",
           "start": 74.7,
           "end": 75.04,
-          "probability": 0.7393137812614441
+          "probability": 0.7392946481704712
         },
         {
           "word": " Библейских",
           "start": 75.04,
           "end": 75.6,
-          "probability": 0.808504730463028
+          "probability": 0.8084989041090012
         },
         {
           "word": " переводах",
           "start": 75.6,
           "end": 76.18,
-          "probability": 0.9905045429865519
+          "probability": 0.9904908736546835
         },
         {
           "word": " вообще.",
           "start": 76.18,
           "end": 76.7,
-          "probability": 0.9294435381889343
+          "probability": 0.9294283986091614
         }
       ]
     },
@@ -1980,201 +1980,201 @@
         51014
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.24141616309249161,
+      "avg_logprob": -0.24142737676633286,
       "compression_ratio": 2.0189701897018972,
-      "no_speech_prob": 0.4780980944633484,
+      "no_speech_prob": 0.4780910015106201,
       "words": [
         {
           "word": " В",
           "start": 76.7,
           "end": 77.16,
-          "probability": 0.11978854984045029
+          "probability": 0.11978883296251297
         },
         {
           "word": " классическом",
           "start": 77.16,
           "end": 77.72,
-          "probability": 0.9372585614522299
+          "probability": 0.9372485081354777
         },
         {
           "word": " английском",
           "start": 77.72,
           "end": 78.22,
-          "probability": 0.9546239376068115
+          "probability": 0.9546219110488892
         },
         {
           "word": " переводе",
           "start": 78.22,
           "end": 78.68,
-          "probability": 0.9551446437835693
+          "probability": 0.9551376104354858
         },
         {
           "word": " Библии",
           "start": 78.68,
           "end": 79.16,
-          "probability": 0.7005425691604614
+          "probability": 0.7005301788449287
         },
         {
           "word": " короля",
           "start": 79.16,
           "end": 79.44,
-          "probability": 0.5766469836235046
+          "probability": 0.5766442716121674
         },
         {
           "word": " Яклов,",
           "start": 79.44,
           "end": 79.98,
-          "probability": 0.696004331111908
+          "probability": 0.6959975361824036
         },
         {
           "word": " 4",
           "start": 80.1,
           "end": 80.26,
-          "probability": 0.6193329095840454
+          "probability": 0.6193288564682007
         },
         {
           "word": " книги",
           "start": 80.26,
           "end": 80.84,
-          "probability": 0.7171050608158112
+          "probability": 0.7170982658863068
         },
         {
           "word": " ЦАС",
           "start": 80.84,
           "end": 81.18,
-          "probability": 0.6748830576737722
+          "probability": 0.6748722990353903
         },
         {
           "word": "-19",
           "start": 81.18,
           "end": 81.4,
-          "probability": 0.6123176366090775
+          "probability": 0.6123134791851044
         },
         {
           "word": " главе",
           "start": 81.4,
           "end": 82.12,
-          "probability": 0.6776702404022217
+          "probability": 0.6776651442050934
         },
         {
           "word": " 37",
           "start": 82.12,
           "end": 82.44,
-          "probability": 0.7289151549339294
+          "probability": 0.728908360004425
         },
         {
           "word": "-го",
           "start": 82.44,
           "end": 82.88,
-          "probability": 0.37877488136291504
+          "probability": 0.37877458333969116
         },
         {
           "word": " стихе",
           "start": 82.88,
           "end": 83.12,
-          "probability": 0.6238020956516266
+          "probability": 0.6237868467966715
         },
         {
           "word": " и",
           "start": 83.12,
           "end": 83.36,
-          "probability": 0.5947319269180298
+          "probability": 0.5947311520576477
         },
         {
           "word": " в",
           "start": 83.36,
           "end": 83.4,
-          "probability": 0.8994444012641907
+          "probability": 0.8994359374046326
         },
         {
           "word": " книге",
           "start": 83.4,
           "end": 83.72,
-          "probability": 0.9896882176399231
+          "probability": 0.9896857440471649
         },
         {
           "word": " «Про",
           "start": 83.72,
           "end": 83.92,
-          "probability": 0.5032880008220673
+          "probability": 0.5032870421806971
         },
         {
           "word": " Рока",
           "start": 83.92,
           "end": 84.2,
-          "probability": 0.3923153951764107
+          "probability": 0.3923148661851883
         },
         {
           "word": " Исаэ»",
           "start": 84.2,
           "end": 84.7,
-          "probability": 0.3778252974152565
+          "probability": 0.37782497704029083
         },
         {
           "word": " 37",
           "start": 84.7,
           "end": 84.92,
-          "probability": 0.944223165512085
+          "probability": 0.944206714630127
         },
         {
           "word": "-го",
           "start": 84.92,
           "end": 85.22,
-          "probability": 0.7539019286632538
+          "probability": 0.7538882791996002
         },
         {
           "word": " главе",
           "start": 85.22,
           "end": 85.58,
-          "probability": 0.8636567294597626
+          "probability": 0.8636508882045746
         },
         {
           "word": " 38",
           "start": 85.58,
           "end": 85.84,
-          "probability": 0.9825456142425537
+          "probability": 0.9825255870819092
         },
         {
           "word": "-го",
           "start": 85.84,
           "end": 86.22,
-          "probability": 0.9569400250911713
+          "probability": 0.9569144248962402
         },
         {
           "word": " стихе",
           "start": 86.22,
           "end": 86.86,
-          "probability": 0.9909127950668335
+          "probability": 0.9908938407897949
         },
         {
           "word": " прямо",
           "start": 86.86,
           "end": 87.14,
-          "probability": 0.553965151309967
+          "probability": 0.5539645552635193
         },
         {
           "word": " используется",
           "start": 87.14,
           "end": 87.92,
-          "probability": 0.865271121263504
+          "probability": 0.865260511636734
         },
         {
           "word": " выражение",
           "start": 87.92,
           "end": 88.5,
-          "probability": 0.9748067657152811
+          "probability": 0.9747951229413351
         },
         {
           "word": " земля",
           "start": 88.5,
           "end": 88.96,
-          "probability": 0.7274360507726669
+          "probability": 0.7274226993322372
         },
         {
           "word": " Армения.",
           "start": 88.96,
           "end": 89.72,
-          "probability": 0.47524699072043103
+          "probability": 0.4752412885427475
         }
       ]
     },
@@ -2210,75 +2210,75 @@
         51214
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.24141616309249161,
+      "avg_logprob": -0.24142737676633286,
       "compression_ratio": 2.0189701897018972,
-      "no_speech_prob": 0.4780980944633484,
+      "no_speech_prob": 0.4780910015106201,
       "words": [
         {
           "word": " В",
           "start": 90.22,
           "end": 90.36,
-          "probability": 0.8618094325065613
+          "probability": 0.8617923855781555
         },
         {
           "word": " современных",
           "start": 90.36,
           "end": 90.9,
-          "probability": 0.9681778252124786
+          "probability": 0.9681717753410339
         },
         {
           "word": " переводах",
           "start": 90.9,
           "end": 91.48,
-          "probability": 0.9935149749120077
+          "probability": 0.9935033917427063
         },
         {
           "word": " в",
           "start": 91.48,
           "end": 91.6,
-          "probability": 0.849480926990509
+          "probability": 0.8494636416435242
         },
         {
           "word": " этих",
           "start": 91.6,
           "end": 91.76,
-          "probability": 0.9959230422973633
+          "probability": 0.9959141612052917
         },
         {
           "word": " же",
           "start": 91.76,
           "end": 91.9,
-          "probability": 0.888971209526062
+          "probability": 0.8889539837837219
         },
         {
           "word": " местах",
           "start": 91.9,
           "end": 92.28,
-          "probability": 0.9940070509910583
+          "probability": 0.9939978122711182
         },
         {
           "word": " чаще",
           "start": 92.28,
           "end": 92.62,
-          "probability": 0.9854998290538788
+          "probability": 0.985483705997467
         },
         {
           "word": " используется",
           "start": 92.62,
           "end": 93.18,
-          "probability": 0.8305849730968475
+          "probability": 0.830577552318573
         },
         {
           "word": " земля",
           "start": 93.18,
           "end": 93.54,
-          "probability": 0.9018219411373138
+          "probability": 0.9018124639987946
         },
         {
           "word": " Арарад.",
           "start": 93.54,
           "end": 94.12,
-          "probability": 0.2530829807122548
+          "probability": 0.25308086971441907
         }
       ]
     },
@@ -2312,51 +2312,51 @@
         51364
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.24141616309249161,
+      "avg_logprob": -0.24142737676633286,
       "compression_ratio": 2.0189701897018972,
-      "no_speech_prob": 0.4780980944633484,
+      "no_speech_prob": 0.4780910015106201,
       "words": [
         {
           "word": " И",
           "start": 94.3,
           "end": 94.38,
-          "probability": 0.6510457396507263
+          "probability": 0.6510422229766846
         },
         {
           "word": " это",
           "start": 94.38,
           "end": 94.52,
-          "probability": 0.9928848147392273
+          "probability": 0.9928557872772217
         },
         {
           "word": " показывает",
           "start": 94.52,
           "end": 95.16,
-          "probability": 0.9833277463912964
+          "probability": 0.9833195209503174
         },
         {
           "word": " главную",
           "start": 95.16,
           "end": 95.62,
-          "probability": 0.9761289954185486
+          "probability": 0.9761133193969727
         },
         {
           "word": " проблему",
           "start": 95.62,
           "end": 96.04,
-          "probability": 0.8811578750610352
+          "probability": 0.8811440865198771
         },
         {
           "word": " аргумиата",
           "start": 96.04,
           "end": 96.62,
-          "probability": 0.6460792034864425
+          "probability": 0.646069860458374
         },
         {
           "word": " Камрану.",
           "start": 96.62,
           "end": 97.0,
-          "probability": 0.4963245168328285
+          "probability": 0.4963211305439472
         }
       ]
     },
@@ -2400,81 +2400,81 @@
         51664
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.24141616309249161,
+      "avg_logprob": -0.24142737676633286,
       "compression_ratio": 2.0189701897018972,
-      "no_speech_prob": 0.4780980944633484,
+      "no_speech_prob": 0.4780910015106201,
       "words": [
         {
           "word": " Разные",
           "start": 97.6,
           "end": 97.98,
-          "probability": 0.8784269988536835
+          "probability": 0.8784145414829254
         },
         {
           "word": " языковые",
           "start": 97.98,
           "end": 98.6,
-          "probability": 0.9627798398335775
+          "probability": 0.9627698262532552
         },
         {
           "word": " и",
           "start": 98.6,
           "end": 98.8,
-          "probability": 0.9786542057991028
+          "probability": 0.9786266088485718
         },
         {
           "word": " переводческие",
           "start": 98.8,
           "end": 99.46,
-          "probability": 0.9511438310146332
+          "probability": 0.9511301964521408
         },
         {
           "word": " традиции",
           "start": 99.46,
           "end": 99.98,
-          "probability": 0.995229959487915
+          "probability": 0.9952262341976166
         },
         {
           "word": " могут",
           "start": 99.98,
           "end": 100.26,
-          "probability": 0.9971599578857422
+          "probability": 0.9971534013748169
         },
         {
           "word": " передавать",
           "start": 100.26,
           "end": 100.76,
-          "probability": 0.9731869697570801
+          "probability": 0.9731765985488892
         },
         {
           "word": " древние",
           "start": 100.76,
           "end": 101.26,
-          "probability": 0.9482951561609904
+          "probability": 0.9482864141464233
         },
         {
           "word": " географические",
           "start": 101.26,
           "end": 101.9,
-          "probability": 0.9530562162399292
+          "probability": 0.9530418962240219
         },
         {
           "word": " названия",
           "start": 101.9,
           "end": 102.52,
-          "probability": 0.979161411523819
+          "probability": 0.9791464507579803
         },
         {
           "word": " по",
           "start": 102.52,
           "end": 102.76,
-          "probability": 0.9987724423408508
+          "probability": 0.9987668991088867
         },
         {
           "word": "-разному.",
           "start": 102.76,
           "end": 103.24,
-          "probability": 0.922443668047587
+          "probability": 0.9224288860956827
         }
       ]
     },
@@ -2560,183 +2560,183 @@
         50914
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.2968108654022217,
+      "avg_logprob": -0.29682230949401855,
       "compression_ratio": 2.040963855421687,
-      "no_speech_prob": 0.36738327145576477,
+      "no_speech_prob": 0.36738067865371704,
       "words": [
         {
           "word": " Это",
           "start": 103.24,
           "end": 103.6,
-          "probability": 0.468201607465744
+          "probability": 0.46820029616355896
         },
         {
           "word": " видно",
           "start": 103.6,
           "end": 103.9,
-          "probability": 0.8815560340881348
+          "probability": 0.8815524578094482
         },
         {
           "word": " еще",
           "start": 103.9,
           "end": 104.16,
-          "probability": 0.634110152721405
+          "probability": 0.6341005563735962
         },
         {
           "word": " в",
           "start": 104.16,
           "end": 104.28,
-          "probability": 0.9782946109771729
+          "probability": 0.9782664179801941
         },
         {
           "word": " бихистусской",
           "start": 104.28,
           "end": 104.94,
-          "probability": 0.6450560867786408
+          "probability": 0.6450478434562683
         },
         {
           "word": " надписи.",
           "start": 104.94,
           "end": 105.5,
-          "probability": 0.7960575222969055
+          "probability": 0.7960494160652161
         },
         {
           "word": " Древние",
           "start": 105.6,
           "end": 105.84,
-          "probability": 0.29120362487932044
+          "probability": 0.2912036043902238
         },
         {
           "word": " персиска",
           "start": 105.84,
           "end": 106.34,
-          "probability": 0.6604218706488609
+          "probability": 0.6604151800274849
         },
         {
           "word": " версии",
           "start": 106.34,
           "end": 106.76,
-          "probability": 0.9545179009437561
+          "probability": 0.9545044302940369
         },
         {
           "word": " используют",
           "start": 106.76,
           "end": 107.26,
-          "probability": 0.9669464528560638
+          "probability": 0.9669316709041595
         },
         {
           "word": " название",
           "start": 107.26,
           "end": 107.74,
-          "probability": 0.875239372253418
+          "probability": 0.87522754073143
         },
         {
           "word": " армина,",
           "start": 107.74,
           "end": 108.22,
-          "probability": 0.6151543060938517
+          "probability": 0.6151432891686758
         },
         {
           "word": " а",
           "start": 108.34,
           "end": 108.44,
-          "probability": 0.9261749386787415
+          "probability": 0.9261512756347656
         },
         {
           "word": " во",
           "start": 108.44,
           "end": 108.54,
-          "probability": 0.7745118737220764
+          "probability": 0.774503767490387
         },
         {
           "word": " велоско",
           "start": 108.54,
           "end": 109.12,
-          "probability": 0.5102473199367523
+          "probability": 0.5102465053399404
         },
         {
           "word": "-урас,",
           "start": 109.12,
           "end": 109.52,
-          "probability": 0.3590984046459198
+          "probability": 0.35909441610177356
         },
         {
           "word": " что,",
           "start": 109.66,
           "end": 109.74,
-          "probability": 0.24434281885623932
+          "probability": 0.2443424016237259
         },
         {
           "word": " то",
           "start": 109.8,
           "end": 109.9,
-          "probability": 0.671332597732544
+          "probability": 0.6713260412216187
         },
         {
           "word": " есть",
           "start": 109.9,
           "end": 110.04,
-          "probability": 0.9032005667686462
+          "probability": 0.9031795859336853
         },
         {
           "word": " старая",
           "start": 110.04,
           "end": 110.42,
-          "probability": 0.8580371737480164
+          "probability": 0.8580231666564941
         },
         {
           "word": " месапутанская",
           "start": 110.42,
           "end": 111.2,
-          "probability": 0.6110613942146301
+          "probability": 0.6110547507802645
         },
         {
           "word": " название",
           "start": 111.2,
           "end": 111.76,
-          "probability": 0.9056767523288727
+          "probability": 0.9056657254695892
         },
         {
           "word": " «урарту»",
           "start": 111.76,
           "end": 112.28,
-          "probability": 0.5650009572505951
+          "probability": 0.5649962544441223
         },
         {
           "word": " существовавшего",
           "start": 112.28,
           "end": 113.1,
-          "probability": 0.9123234897851944
+          "probability": 0.9123116582632065
         },
         {
           "word": " рання",
           "start": 113.1,
           "end": 113.66,
-          "probability": 0.5586571767926216
+          "probability": 0.5586550384759903
         },
         {
           "word": " в",
           "start": 113.66,
           "end": 113.8,
-          "probability": 0.9338711500167847
+          "probability": 0.9338467121124268
         },
         {
           "word": " том",
           "start": 113.8,
           "end": 113.94,
-          "probability": 0.9536443948745728
+          "probability": 0.9536254405975342
         },
         {
           "word": " же",
           "start": 113.94,
           "end": 114.12,
-          "probability": 0.9881431460380554
+          "probability": 0.9881213903427124
         },
         {
           "word": " регионе.",
           "start": 114.12,
           "end": 114.68,
-          "probability": 0.9281127651532491
+          "probability": 0.9281009833017985
         }
       ]
     },
@@ -2788,87 +2788,87 @@
         51214
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.2968108654022217,
+      "avg_logprob": -0.29682230949401855,
       "compression_ratio": 2.040963855421687,
-      "no_speech_prob": 0.36738327145576477,
+      "no_speech_prob": 0.36738067865371704,
       "words": [
         {
           "word": " Есть",
           "start": 114.94,
           "end": 115.12,
-          "probability": 0.9722791910171509
+          "probability": 0.9722676873207092
         },
         {
           "word": " независимые",
           "start": 115.12,
           "end": 115.96,
-          "probability": 0.7651036858558655
+          "probability": 0.7650934338569642
         },
         {
           "word": " греческие",
           "start": 115.96,
           "end": 116.5,
-          "probability": 0.7123267255723477
+          "probability": 0.7123186156153679
         },
         {
           "word": " свидетельства.",
           "start": 116.5,
           "end": 117.22,
-          "probability": 0.9272637963294983
+          "probability": 0.9272546768188477
         },
         {
           "word": " Геродот",
           "start": 117.38,
           "end": 117.72,
-          "probability": 0.6096909642219543
+          "probability": 0.6096879169344902
         },
         {
           "word": " с",
           "start": 117.72,
           "end": 117.84,
-          "probability": 0.5180051326751709
+          "probability": 0.5180065035820007
         },
         {
           "word": " пятом",
           "start": 117.84,
           "end": 118.14,
-          "probability": 0.8627557158470154
+          "probability": 0.8627451658248901
         },
         {
           "word": " веки",
           "start": 118.14,
           "end": 118.42,
-          "probability": 0.8706454435984293
+          "probability": 0.8706282575925192
         },
         {
           "word": " до",
           "start": 118.42,
           "end": 118.52,
-          "probability": 0.9136242270469666
+          "probability": 0.9136041402816772
         },
         {
           "word": " нашей",
           "start": 118.52,
           "end": 118.8,
-          "probability": 0.6356621980667114
+          "probability": 0.6356629133224487
         },
         {
           "word": " эру",
           "start": 118.8,
           "end": 119.16,
-          "probability": 0.5175133645534515
+          "probability": 0.5175098776817322
         },
         {
           "word": " поминает",
           "start": 119.16,
           "end": 119.82,
-          "probability": 0.6452732682228088
+          "probability": 0.6452653308709463
         },
         {
           "word": " армян.",
           "start": 119.82,
           "end": 120.16,
-          "probability": 0.842091977596283
+          "probability": 0.8420769770940145
         }
       ]
     },
@@ -2916,99 +2916,99 @@
         51464
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.2968108654022217,
+      "avg_logprob": -0.29682230949401855,
       "compression_ratio": 2.040963855421687,
-      "no_speech_prob": 0.36738327145576477,
+      "no_speech_prob": 0.36738067865371704,
       "words": [
         {
           "word": " Ксиновон",
           "start": 120.36,
           "end": 120.84,
-          "probability": 0.7444832846522331
+          "probability": 0.7444768473505974
         },
         {
           "word": " в",
           "start": 120.84,
           "end": 121.02,
-          "probability": 0.16764022409915924
+          "probability": 0.16764242947101593
         },
         {
           "word": " начале",
           "start": 121.02,
           "end": 121.4,
-          "probability": 0.7852413356304169
+          "probability": 0.7852367460727692
         },
         {
           "word": " 4",
           "start": 121.4,
           "end": 121.66,
-          "probability": 0.5947079062461853
+          "probability": 0.5947046875953674
         },
         {
           "word": "-го",
           "start": 121.66,
           "end": 121.88,
-          "probability": 0.4601527750492096
+          "probability": 0.460154727101326
         },
         {
           "word": " века",
           "start": 121.88,
           "end": 122.12,
-          "probability": 0.9266750514507294
+          "probability": 0.926671713590622
         },
         {
           "word": " до",
           "start": 122.12,
           "end": 122.26,
-          "probability": 0.9578516483306885
+          "probability": 0.9578274488449097
         },
         {
           "word": " нашей",
           "start": 122.26,
           "end": 122.58,
-          "probability": 0.9197440147399902
+          "probability": 0.9197375774383545
         },
         {
           "word": " эры",
           "start": 122.58,
           "end": 122.98,
-          "probability": 0.8041700124740601
+          "probability": 0.804153561592102
         },
         {
           "word": " неоднократно",
           "start": 122.98,
           "end": 123.72,
-          "probability": 0.9091657996177673
+          "probability": 0.9091530919075013
         },
         {
           "word": " пишет",
           "start": 123.72,
           "end": 124.12,
-          "probability": 0.9334729313850403
+          "probability": 0.933462381362915
         },
         {
           "word": " об",
           "start": 124.12,
           "end": 124.28,
-          "probability": 0.901554524898529
+          "probability": 0.9015341997146606
         },
         {
           "word": " армении",
           "start": 124.28,
           "end": 124.66,
-          "probability": 0.806956966718038
+          "probability": 0.8069436351458231
         },
         {
           "word": " и",
           "start": 124.66,
           "end": 125.04,
-          "probability": 0.9764646887779236
+          "probability": 0.9764356017112732
         },
         {
           "word": " армянах.",
           "start": 125.04,
           "end": 125.66,
-          "probability": 0.928664967417717
+          "probability": 0.9286517351865768
         }
       ]
     },
@@ -3048,81 +3048,81 @@
         51714
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.2968108654022217,
+      "avg_logprob": -0.29682230949401855,
       "compression_ratio": 2.040963855421687,
-      "no_speech_prob": 0.36738327145576477,
+      "no_speech_prob": 0.36738067865371704,
       "words": [
         {
           "word": " Поэтому",
           "start": 125.86,
           "end": 126.22,
-          "probability": 0.8990038633346558
+          "probability": 0.89899080991745
         },
         {
           "word": " вопрос",
           "start": 126.22,
           "end": 126.6,
-          "probability": 0.948296070098877
+          "probability": 0.9482831954956055
         },
         {
           "word": " Камрана,",
           "start": 126.6,
           "end": 127.28,
-          "probability": 0.4843342754757032
+          "probability": 0.4843249270343222
         },
         {
           "word": " почему",
           "start": 127.34,
           "end": 127.56,
-          "probability": 0.9730609059333801
+          "probability": 0.9730488061904907
         },
         {
           "word": " Иисус",
           "start": 127.56,
           "end": 128.14,
-          "probability": 0.812673290570577
+          "probability": 0.812657097975413
         },
         {
           "word": " не",
           "start": 128.14,
           "end": 128.32,
-          "probability": 0.9512135982513428
+          "probability": 0.9511951208114624
         },
         {
           "word": " встретил",
           "start": 128.32,
           "end": 128.74,
-          "probability": 0.9916994273662567
+          "probability": 0.9916937053203583
         },
         {
           "word": " армян",
           "start": 128.74,
           "end": 129.16,
-          "probability": 0.9855479200681051
+          "probability": 0.9855335553487142
         },
         {
           "word": " исторически",
           "start": 129.16,
           "end": 129.82,
-          "probability": 0.9051481485366821
+          "probability": 0.9051381349563599
         },
         {
           "word": " ничего",
           "start": 129.82,
           "end": 130.14,
-          "probability": 0.8746098875999451
+          "probability": 0.8745942115783691
         },
         {
           "word": " не",
           "start": 130.14,
           "end": 130.32,
-          "probability": 0.964647114276886
+          "probability": 0.964624285697937
         },
         {
           "word": " доказывает.",
           "start": 130.32,
           "end": 130.96,
-          "probability": 0.9656470020612081
+          "probability": 0.9656349817911783
         }
       ]
     },
@@ -3175,87 +3175,87 @@
         50664
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.20363372802734375,
+      "avg_logprob": -0.20364614486694335,
       "compression_ratio": 1.9883720930232558,
-      "no_speech_prob": 0.05849011614918709,
+      "no_speech_prob": 0.05848947912454605,
       "words": [
         {
           "word": " Персиски",
           "start": 130.96,
           "end": 131.68,
-          "probability": 0.4398921802639961
+          "probability": 0.4398892745375633
         },
         {
           "word": " и",
           "start": 131.68,
           "end": 131.82,
-          "probability": 0.543480396270752
+          "probability": 0.5434775948524475
         },
         {
           "word": " глические",
           "start": 131.82,
           "end": 132.18,
-          "probability": 0.7713000029325485
+          "probability": 0.771289125084877
         },
         {
           "word": " источники",
           "start": 132.18,
           "end": 132.6,
-          "probability": 0.9106810688972473
+          "probability": 0.9106718699137369
         },
         {
           "word": " фиксируют",
           "start": 132.6,
           "end": 133.24,
-          "probability": 0.9749286025762558
+          "probability": 0.9749173223972321
         },
         {
           "word": " армению",
           "start": 133.24,
           "end": 133.72,
-          "probability": 0.7368456323941549
+          "probability": 0.7368371486663818
         },
         {
           "word": " и",
           "start": 133.72,
           "end": 133.98,
-          "probability": 0.91131991147995
+          "probability": 0.9112932085990906
         },
         {
           "word": " армян",
           "start": 133.98,
           "end": 134.28,
-          "probability": 0.6555655052264532
+          "probability": 0.6555555959542593
         },
         {
           "word": " в",
           "start": 134.28,
           "end": 134.48,
-          "probability": 0.7039836049079895
+          "probability": 0.7039803862571716
         },
         {
           "word": " за",
           "start": 134.48,
           "end": 134.56,
-          "probability": 0.9167141318321228
+          "probability": 0.9166979789733887
         },
         {
           "word": " столетие",
           "start": 134.56,
           "end": 135.2,
-          "probability": 0.7191442847251892
+          "probability": 0.7191352645556132
         },
         {
           "word": " «дорожделних",
           "start": 135.2,
           "end": 136.02,
-          "probability": 0.3602461020151774
+          "probability": 0.36024270082513493
         },
         {
           "word": " христа».",
           "start": 136.02,
           "end": 136.74,
-          "probability": 0.6349720172584057
+          "probability": 0.63496333360672
         }
       ]
     },
@@ -3327,153 +3327,153 @@
         51214
       ],
       "temperature": 0.0,
-      "avg_logprob": -0.20363372802734375,
+      "avg_logprob": -0.20364614486694335,
       "compression_ratio": 1.9883720930232558,
-      "no_speech_prob": 0.05849011614918709,
+      "no_speech_prob": 0.05848947912454605,
       "words": [
         {
           "word": " А",
           "start": 136.74,
           "end": 136.84,
-          "probability": 0.9148090481758118
+          "probability": 0.9147891998291016
         },
         {
           "word": " попытка",
           "start": 136.84,
           "end": 137.26,
-          "probability": 0.9799770414829254
+          "probability": 0.9799657464027405
         },
         {
           "word": " доказать",
           "start": 137.26,
           "end": 137.72,
-          "probability": 0.9888299703598022
+          "probability": 0.9888147513071696
         },
         {
           "word": " отсутствие",
           "start": 137.72,
           "end": 138.16,
-          "probability": 0.7645910382270813
+          "probability": 0.764587382475535
         },
         {
           "word": " армении",
           "start": 138.16,
           "end": 138.6,
-          "probability": 0.6588940670092901
+          "probability": 0.6588811526695887
         },
         {
           "word": " словом",
           "start": 138.6,
           "end": 139.18,
-          "probability": 0.7819793224334717
+          "probability": 0.7819704115390778
         },
         {
           "word": " «арарат»",
           "start": 139.18,
           "end": 139.86,
-          "probability": 0.6748915195465088
+          "probability": 0.6748853087425232
         },
         {
           "word": " рушится",
           "start": 139.86,
           "end": 140.14,
-          "probability": 0.7989969054857889
+          "probability": 0.7989846070607504
         },
         {
           "word": " на",
           "start": 140.14,
           "end": 140.42,
-          "probability": 0.9711839556694031
+          "probability": 0.9711568355560303
         },
         {
           "word": " самих",
           "start": 140.42,
           "end": 140.76,
-          "probability": 0.8208571672439575
+          "probability": 0.8208494484424591
         },
         {
           "word": " источниках.",
           "start": 140.76,
           "end": 141.54,
-          "probability": 0.9527306705713272
+          "probability": 0.9527264386415482
         },
         {
           "word": " Камран",
           "start": 141.82,
           "end": 142.04,
-          "probability": 0.6398738026618958
+          "probability": 0.639865959684054
         },
         {
           "word": " просто",
           "start": 142.04,
           "end": 142.4,
-          "probability": 0.9768866896629333
+          "probability": 0.9768622517585754
         },
         {
           "word": " смешивает",
           "start": 142.4,
           "end": 142.92,
-          "probability": 0.9887448946634928
+          "probability": 0.9887300133705139
         },
         {
           "word": " разные",
           "start": 142.92,
           "end": 143.34,
-          "probability": 0.9659736752510071
+          "probability": 0.9659703373908997
         },
         {
           "word": " языковые",
           "start": 143.34,
           "end": 143.92,
-          "probability": 0.9733128746350607
+          "probability": 0.9733019272486368
         },
         {
           "word": " традиции",
           "start": 143.92,
           "end": 144.4,
-          "probability": 0.9889708757400513
+          "probability": 0.9889644980430603
         },
         {
           "word": " и",
           "start": 144.4,
           "end": 144.66,
-          "probability": 0.9228519797325134
+          "probability": 0.9228348731994629
         },
         {
           "word": " принимает",
           "start": 144.66,
           "end": 145.22,
-          "probability": 0.9928319752216339
+          "probability": 0.9928304553031921
         },
         {
           "word": " различие",
           "start": 145.22,
           "end": 145.78,
-          "probability": 0.9081417322158813
+          "probability": 0.9081304371356964
         },
         {
           "word": " названия",
           "start": 145.78,
           "end": 146.32,
-          "probability": 0.8911481201648712
+          "probability": 0.8911388218402863
         },
         {
           "word": " за",
           "start": 146.32,
           "end": 146.56,
-          "probability": 0.9649995565414429
+          "probability": 0.9649767875671387
         },
         {
           "word": " отсутствие",
           "start": 146.56,
           "end": 147.28,
-          "probability": 0.9907502134641012
+          "probability": 0.9907376567522684
         },
         {
           "word": " страны.",
           "start": 147.28,
           "end": 147.88,
-          "probability": 0.9929183423519135
+          "probability": 0.9929067194461823
         }
       ]
     }

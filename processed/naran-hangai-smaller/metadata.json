@@ -3,5 +3,6 @@
   "original": "incoming/naran-hangai-smaller.mp4",
   "output_dir": "processed/naran-hangai-smaller",
   "final_video": "processed/naran-hangai-smaller/final.mp4",
+  "voiceover_duration": 175.056,
   "status": "completed"
 }
