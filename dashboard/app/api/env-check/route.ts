@@ -1,27 +1,26 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   const checks = {
-    github_token: !!process.env.GITHUB_TOKEN,
-    kimi_key: !!process.env.KIMI_API_KEY,
-    openai_key: !!process.env.OPENAI_API_KEY,
-    r2_account_id: !!process.env.R2_ACCOUNT_ID,
-    r2_access_key: !!process.env.R2_ACCESS_KEY_ID,
-    r2_secret: !!process.env.R2_SECRET_ACCESS_KEY,
-    r2_bucket: !!process.env.R2_BUCKET_NAME,
-    r2_public_url: !!process.env.R2_PUBLIC_URL,
+    GITHUB_TOKEN: !!process.env.GITHUB_TOKEN,
+    R2_ACCOUNT_ID: !!process.env.R2_ACCOUNT_ID,
+    R2_ACCESS_KEY_ID: !!process.env.R2_ACCESS_KEY_ID,
+    R2_SECRET_ACCESS_KEY: !!process.env.R2_SECRET_ACCESS_KEY,
+    R2_BUCKET_NAME: !!process.env.R2_BUCKET_NAME,
+    R2_PUBLIC_URL: !!process.env.R2_PUBLIC_URL,
+    OPENAI_API_KEY: !!process.env.OPENAI_API_KEY,
+    HF_TOKEN: !!process.env.HF_TOKEN,
   };
 
-  const allR2 = checks.r2_account_id && checks.r2_access_key && checks.r2_secret && checks.r2_bucket && checks.r2_public_url;
-  const hasTranslator = checks.kimi_key || checks.openai_key;
+  const github_ready = checks.GITHUB_TOKEN;
+  const r2_ready = checks.R2_ACCOUNT_ID && checks.R2_ACCESS_KEY_ID && checks.R2_SECRET_ACCESS_KEY && checks.R2_BUCKET_NAME && checks.R2_PUBLIC_URL;
+  const openai_ready = checks.OPENAI_API_KEY;
 
   return NextResponse.json({
-    ready: checks.github_token && hasTranslator,
-    github_ready: checks.github_token,
-    kimi_ready: checks.kimi_key,
-    openai_ready: checks.openai_key,
-    translator_ready: hasTranslator,
-    r2_ready: allR2,
+    ready: github_ready && openai_ready,
+    github_ready,
+    r2_ready,
+    openai_ready,
     checks,
   });
 }
