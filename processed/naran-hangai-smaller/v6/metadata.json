@@ -1,0 +1,10 @@
+{
+  "video_id": "naran-hangai-smaller",
+  "version": 6,
+  "robustness": "hardened",
+  "output_dir": "processed/naran-hangai-smaller/v6",
+  "final_video": "processed/naran-hangai-smaller/v6/final.mp4",
+  "voiceover_duration": 315.048,
+  "back_translation_score": 0.568,
+  "status": "completed"
+}
