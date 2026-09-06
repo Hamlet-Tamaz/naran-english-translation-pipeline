@@ -27,9 +27,11 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", required=True)
     parser.add_argument("--output-dir", default="processed")
+    parser.add_argument("--robustness", default="standard", choices=["free", "basic", "standard", "hardened", "maximum"])
     args = parser.parse_args()
 
     video_path = args.input
+    robustness = args.robustness
     if not os.path.exists(video_path):
         print(f"Video not found: {video_path}")
         sys.exit(1)
@@ -42,35 +44,33 @@ def main():
     out_dir = os.path.join(base_dir, f"v{version}")
     os.makedirs(out_dir, exist_ok=True)
 
-    print(f"Processing: {video_id} → v{version}")
-    print("  [1/6] Extracting audio...")
+    print(f"Processing: {video_id} → v{version} [robustness: {robustness}]")
+    print("  [1/5] Extracting audio...")
     audio = extract_audio(video_path, out_dir)
 
-    print("  [2/6] Transcribing Russian...")
+    print("  [2/5] Transcribing Russian...")
     transcript = transcribe(audio, out_dir)
 
-    print("  [3/6] Hardened translation (GPT-4o + GPT-4o-mini + back-check)...")
-    translation = translate_hardened(transcript, out_dir)
+    print("  [3/5] Translating...")
+    translation = translate_hardened(transcript, out_dir, robustness)
 
-    print("  [4/6] Running speaker diarization...")
-    pause_diarization = pause_heuristic_diarization(transcript)
-    pyannote_diarization = diarize_audio(audio, out_dir)
-    comparison = compare_methods(
-        translation.get("segments", []),
-        pyannote_diarization,
-        pause_diarization
-    )
-    with open(os.path.join(out_dir, "speaker_comparison.json"), "w", encoding="utf-8") as f:
-        json.dump(comparison, f, ensure_ascii=False, indent=2)
-
-    print("  [5/6] Generating voiceover...")
+    print("  [4/5] Generating voiceover...")
     voiceover_path, voiceover_duration = gen_voiceover(translation, out_dir)
 
-    print("  [6/6] Burning subtitles & rendering...")
+    print("  [5/5] Burning subtitles & rendering...")
     final = burn(video_path, translation, voiceover_path, voiceover_duration, out_dir)
 
     print("  Generating caption...")
     gen_caption(translation, out_dir)
+
+    # Run diarization if robustness >= standard
+    if robustness in ("standard", "hardened", "maximum"):
+        print("  Running speaker diarization...")
+        pause_diarization = pause_heuristic_diarization(transcript)
+        pyannote_diarization = diarize_audio(audio, out_dir)
+        comparison = compare_methods(translation.get("segments", []), pyannote_diarization, pause_diarization)
+        with open(os.path.join(out_dir, "speaker_comparison.json"), "w", encoding="utf-8") as f:
+            json.dump(comparison, f, ensure_ascii=False, indent=2)
 
     versions_file = os.path.join(base_dir, "versions.json")
     versions_data = {"versions": []}
@@ -81,19 +81,18 @@ def main():
     versions_data["versions"].append({
         "number": version,
         "folder": f"v{version}",
-        "created_at": "auto",
+        "robustness": robustness,
         "speakers_found": sorted(list(set(s.get("speaker", "Naran") for s in translation.get("segments", [])))),
         "voiceover_duration": voiceover_duration,
         "back_translation_score": translation.get("back_translation_score", 0)
     })
-
     with open(versions_file, "w") as f:
         json.dump(versions_data, f, indent=2)
 
     meta = {
         "video_id": video_id,
         "version": version,
-        "original": video_path,
+        "robustness": robustness,
         "output_dir": out_dir,
         "final_video": final,
         "voiceover_duration": voiceover_duration,
@@ -103,7 +102,7 @@ def main():
     with open(os.path.join(out_dir, "metadata.json"), "w") as f:
         json.dump(meta, f, indent=2)
 
-    print(f"Done! v{version} → {out_dir}/")
+    print(f"Done! v{version} [{robustness}] → {out_dir}/")
 
 if __name__ == "__main__":
     main()
