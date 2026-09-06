@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "description": "Hardcoded translation corrections. Applied post-translation as safeguard.",
+  "rules": [
+    {
+      "id": "rule_001",
+      "name": "Negation preservation: 'не встречал'",
+      "pattern_ru": "не встречал",
+      "pattern_en_incorrect": "met",
+      "pattern_en_correct": "did not meet",
+      "context": "Kamran's argument about Jesus and Armenians",
+      "severity": "critical",
+      "date_added": "2026-09-05",
+      "applied_count": 0
+    },
+    {
+      "id": "rule_002",
+      "name": "Negation preservation: 'армян нет'",
+      "pattern_ru": "армян нет",
+      "pattern_en_incorrect": "Armenians are",
+      "pattern_en_correct": "there are no Armenians",
+      "context": "Absence claims in Bible",
+      "severity": "critical",
+      "date_added": "2026-09-05",
+      "applied_count": 0
+    },
+    {
+      "id": "rule_003",
+      "name": "Negation preservation: 'не упоминаются'",
+      "pattern_ru": "не упоминаются",
+      "pattern_en_incorrect": "mentioned",
+      "pattern_en_correct": "are not mentioned",
+      "context": "Biblical reference claims",
+      "severity": "critical",
+      "date_added": "2026-09-05",
+      "applied_count": 0
+    },
+    {
+      "id": "rule_004",
+      "name": "Implication preservation: 'значит не существовала'",
+      "pattern_ru": "значит не существовала",
+      "pattern_en_incorrect": "existed",
+      "pattern_en_correct": "therefore did not exist",
+      "context": "Existence arguments",
+      "severity": "critical",
+      "date_added": "2026-09-05",
+      "applied_count": 0
+    }
+  ]
+}
