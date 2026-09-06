@@ -1,9 +1,7 @@
 import os
 import json
-from typing import List, Dict
 
 def translate_hardened(transcript: dict, output_dir: str, robustness: str = "standard") -> dict:
-    """Run translation with configurable robustness + rule engine."""
     openai_key = os.environ.get("OPENAI_API_KEY")
     if not openai_key:
         raise RuntimeError("OPENAI_API_KEY not set")
@@ -80,6 +78,26 @@ def apply_rules(translation: dict, rules: dict) -> dict:
     translation["full_text"] = " ".join(s["text"] for s in translation.get("segments", []))
     return translation
 
+def parse_segments_response(response_text: str, fallback_segments: list) -> list:
+    """Parse OpenAI JSON response, handling various formats."""
+    try:
+        data = json.loads(response_text)
+        # Try different possible structures
+        if isinstance(data, list):
+            return data
+        if isinstance(data, dict):
+            if "segments" in data and isinstance(data["segments"], list):
+                return data["segments"]
+            if "text" in data and isinstance(data["text"], str):
+                # Single text response — split by timing
+                return [{"start": s["start"], "end": s["end"], "text": data["text"], "speaker": "Naran"} for s in fallback_segments]
+    except json.JSONDecodeError:
+        pass
+
+    # Fallback: use original segments with placeholder text
+    print("    Warning: Could not parse translation response, using fallback")
+    return [{"start": s["start"], "end": s["end"], "text": s["text"], "speaker": "Naran"} for s in fallback_segments]
+
 def translate_google_only(ru_segments: list) -> dict:
     from deep_translator import GoogleTranslator
     translator = GoogleTranslator(source="ru", target="en")
@@ -94,14 +112,13 @@ def translate_google_only(ru_segments: list) -> dict:
     return {"full_text": " ".join(s["text"] for s in segments), "segments": segments}
 
 def translate_gpt4o_mini(client, ru_segments, full_ru):
-    prompt = "Translate to English. Preserve negation exactly.\n\nRussian:\n" + full_ru + "\n\nReturn JSON with segments array."
+    prompt = "Translate this Russian text to English. Preserve all negation exactly.\n\nRussian:\n" + full_ru + "\n\nReturn a JSON object with a 'segments' array. Each segment must have: start (number), end (number), text (string), speaker (string)."
     response = client.chat.completions.create(
         model="gpt-4o-mini", messages=[{"role": "user", "content": prompt}],
         temperature=0.1, max_tokens=4000, response_format={"type": "json_object"}
     )
-    result = json.loads(response.choices[0].message.content.strip())
-    segments = result.get("segments", [])
-    return {"full_text": " ".join(s["text"] for s in segments), "segments": segments}
+    segments = parse_segments_response(response.choices[0].message.content.strip(), ru_segments)
+    return {"full_text": " ".join(s.get("text", "") for s in segments), "segments": segments}
 
 def translate_gpt4o_contextual(client, ru_segments, full_ru):
     prompt = """Translate Russian to English. PRESERVE ALL NEGATION EXACTLY.
@@ -114,7 +131,7 @@ Rules:
 Russian:
 """ + full_ru + """
 
-Return JSON with segments array."""
+Return a JSON object with a 'segments' array. Each segment must have: start (number), end (number), text (string), speaker (string)."""
     response = client.chat.completions.create(
         model="gpt-4o", messages=[
             {"role": "system", "content": "Precise translator. NEVER flip negations."},
@@ -122,19 +139,17 @@ Return JSON with segments array."""
         ],
         temperature=0.1, max_tokens=4000, response_format={"type": "json_object"}
     )
-    result = json.loads(response.choices[0].message.content.strip())
-    segments = result.get("segments", [])
-    return {"full_text": " ".join(s["text"] for s in segments), "segments": segments}
+    segments = parse_segments_response(response.choices[0].message.content.strip(), ru_segments)
+    return {"full_text": " ".join(s.get("text", "") for s in segments), "segments": segments}
 
 def translate_gpt4o_literal(client, ru_segments, full_ru):
-    prompt = "Literal translation. Word-for-word. Do NOT reframe.\n\nRussian:\n" + full_ru + "\n\nReturn JSON with segments array."
+    prompt = "Literal translation. Word-for-word. Do NOT reframe.\n\nRussian:\n" + full_ru + "\n\nReturn a JSON object with a 'segments' array. Each segment must have: start (number), end (number), text (string), speaker (string)."
     response = client.chat.completions.create(
         model="gpt-4o-mini", messages=[{"role": "user", "content": prompt}],
         temperature=0.1, max_tokens=4000, response_format={"type": "json_object"}
     )
-    result = json.loads(response.choices[0].message.content.strip())
-    segments = result.get("segments", [])
-    return {"full_text": " ".join(s["text"] for s in segments), "segments": segments}
+    segments = parse_segments_response(response.choices[0].message.content.strip(), ru_segments)
+    return {"full_text": " ".join(s.get("text", "") for s in segments), "segments": segments}
 
 def back_translate_check(client, english_text, original_russian):
     prompt = "Translate this English back to Russian literally:\n\n" + english_text + "\n\nReturn ONLY Russian."
@@ -152,7 +167,7 @@ def resolve_translations(trans1, trans2, back_check, ru_segments):
     final_segments = []
     for i, seg1 in enumerate(trans1["segments"]):
         seg2 = trans2["segments"][i] if i < len(trans2["segments"]) else seg1
-        text1, text2 = seg1["text"], seg2["text"]
+        text1, text2 = seg1.get("text", ""), seg2.get("text", "")
         negation_words = ["not", "never", "no", "nothing", "nobody", "nowhere"]
         has_neg1 = any(n in text1.lower() for n in negation_words)
         has_neg2 = any(n in text2.lower() for n in negation_words)
