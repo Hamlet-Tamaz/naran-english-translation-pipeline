@@ -78,25 +78,40 @@ def apply_rules(translation: dict, rules: dict) -> dict:
     translation["full_text"] = " ".join(s["text"] for s in translation.get("segments", []))
     return translation
 
+def normalize_speaker(speaker: str) -> str:
+    """Normalize speaker names to standard labels."""
+    s = speaker.strip().lower()
+    if s in ("naran", "host", "narrator", "speaker", "main"):
+        return "Naran"
+    elif "commenter" in s:
+        return speaker  # Keep as Commenter1, Commenter2, etc.
+    elif s in ("kamran", "opponent"):
+        return "Kamran"
+    else:
+        return "Naran"  # Default
+
 def parse_segments_response(response_text: str, fallback_segments: list) -> list:
-    """Parse OpenAI JSON response, handling various formats."""
     try:
         data = json.loads(response_text)
-        # Try different possible structures
         if isinstance(data, list):
-            return data
-        if isinstance(data, dict):
+            segments = data
+        elif isinstance(data, dict):
             if "segments" in data and isinstance(data["segments"], list):
-                return data["segments"]
-            if "text" in data and isinstance(data["text"], str):
-                # Single text response — split by timing
+                segments = data["segments"]
+            elif "text" in data and isinstance(data["text"], str):
                 return [{"start": s["start"], "end": s["end"], "text": data["text"], "speaker": "Naran"} for s in fallback_segments]
-    except json.JSONDecodeError:
-        pass
+            else:
+                return fallback_segments
+        else:
+            return fallback_segments
 
-    # Fallback: use original segments with placeholder text
-    print("    Warning: Could not parse translation response, using fallback")
-    return [{"start": s["start"], "end": s["end"], "text": s["text"], "speaker": "Naran"} for s in fallback_segments]
+        # Normalize speaker names
+        for seg in segments:
+            seg["speaker"] = normalize_speaker(seg.get("speaker", "Naran"))
+        return segments
+    except (json.JSONDecodeError, KeyError, TypeError):
+        print("    Warning: Could not parse translation response, using fallback")
+        return [{"start": s["start"], "end": s["end"], "text": s["text"], "speaker": "Naran"} for s in fallback_segments]
 
 def translate_google_only(ru_segments: list) -> dict:
     from deep_translator import GoogleTranslator
@@ -112,7 +127,7 @@ def translate_google_only(ru_segments: list) -> dict:
     return {"full_text": " ".join(s["text"] for s in segments), "segments": segments}
 
 def translate_gpt4o_mini(client, ru_segments, full_ru):
-    prompt = "Translate this Russian text to English. Preserve all negation exactly.\n\nRussian:\n" + full_ru + "\n\nReturn a JSON object with a 'segments' array. Each segment must have: start (number), end (number), text (string), speaker (string)."
+    prompt = "Translate this Russian text to English. Preserve all negation exactly.\n\nRussian:\n" + full_ru + "\n\nReturn a JSON object with a 'segments' array. Each segment must have: start (number), end (number), text (string), speaker (string). The host who debunks claims is 'Naran'. People he quotes are 'Commenter1', 'Commenter2', etc."
     response = client.chat.completions.create(
         model="gpt-4o-mini", messages=[{"role": "user", "content": prompt}],
         temperature=0.1, max_tokens=4000, response_format={"type": "json_object"}
@@ -128,13 +143,17 @@ Rules:
 3. "не упоминаются" = "are NOT mentioned"
 4. Keep argument structure intact
 
+Speaker labels:
+- The host who debunks claims = "Naran"
+- People he quotes/responds to = "Kamran" or "Commenter1", "Commenter2", etc.
+
 Russian:
 """ + full_ru + """
 
 Return a JSON object with a 'segments' array. Each segment must have: start (number), end (number), text (string), speaker (string)."""
     response = client.chat.completions.create(
         model="gpt-4o", messages=[
-            {"role": "system", "content": "Precise translator. NEVER flip negations."},
+            {"role": "system", "content": "Precise translator. NEVER flip negations. Use speaker labels 'Naran' and 'Kamran'."},
             {"role": "user", "content": prompt}
         ],
         temperature=0.1, max_tokens=4000, response_format={"type": "json_object"}
