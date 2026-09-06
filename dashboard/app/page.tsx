@@ -46,6 +46,7 @@ export default function Dashboard() {
 
   // Preview
   const [previewVideo, setPreviewVideo] = useState<string | null>(null);
+  const [previewFilename, setPreviewFilename] = useState<string>("");
   const [previewCaption, setPreviewCaption] = useState<string>("");
   const [previewVersions, setPreviewVersions] = useState<VersionInfo[]>([]);
   const [selectedVersion, setSelectedVersion] = useState<number>(0);
@@ -145,6 +146,7 @@ export default function Dashboard() {
   }
 
   async function openPreview(filename: string) {
+    setPreviewFilename(filename);
     const versions = await fetchVersions(filename);
     setPreviewVersions(versions);
     const vNum = versions.length > 0 ? versions[versions.length - 1].number : 1;
@@ -372,7 +374,7 @@ export default function Dashboard() {
               <div style={{ padding: "12px 20px", borderBottom: "1px solid #27272a", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                 <span style={{ fontSize: 12, color: "#a1a1aa" }}>Version:</span>
                 {previewVersions.map(v => (
-                  <button key={v.number} onClick={() => { setSelectedVersion(v.number); loadVersionPreview(completed.find(c => c.status === "completed")?.filename || "", v.number); }}
+                  <button key={v.number} onClick={() => { setSelectedVersion(v.number); loadVersionPreview(previewVideo?.split("/processed/")[1]?.split("/v")[0] + ".mp4" || "", v.number); }}
                     style={{ padding: "4px 10px", borderRadius: 4, border: "1px solid", borderColor: selectedVersion === v.number ? "#3b82f6" : "#3f3f46", background: selectedVersion === v.number ? "rgba(59,130,246,0.2)" : "transparent", color: selectedVersion === v.number ? "#3b82f6" : "#a1a1aa", fontSize: 12, cursor: "pointer" }}>
                     v{v.number} ({v.robustness})
                   </button>
