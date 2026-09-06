@@ -1,10 +1,9 @@
 import os
 import json
-import time
 from typing import List, Dict
 
-def translate_hardened(transcript: dict, output_dir: str) -> dict:
-    """Run multiple translation methods and cross-check for accuracy."""
+def translate_hardened(transcript: dict, output_dir: str, robustness: str = "standard") -> dict:
+    """Run translation with configurable robustness + rule engine."""
     openai_key = os.environ.get("OPENAI_API_KEY")
     if not openai_key:
         raise RuntimeError("OPENAI_API_KEY not set")
@@ -15,148 +14,161 @@ def translate_hardened(transcript: dict, output_dir: str) -> dict:
     ru_segments = [seg for seg in transcript.get("segments", []) if seg["text"].strip()]
     full_ru = " ".join(seg["text"].strip() for seg in ru_segments)
 
-    print("  [HARDEN] Method 1: GPT-4o with full context...")
-    trans1 = translate_gpt4o_contextual(client, ru_segments, full_ru)
+    # Load rules
+    rules = load_rules()
 
-    print("  [HARDEN] Method 2: GPT-4o-mini literal...")
-    trans2 = translate_gpt4o_literal(client, ru_segments, full_ru)
+    if robustness == "free":
+        print("  [Mode: FREE] Google Translate only")
+        final = translate_google_only(ru_segments)
+    elif robustness == "basic":
+        print("  [Mode: BASIC] GPT-4o-mini single pass")
+        final = translate_gpt4o_mini(client, ru_segments, full_ru)
+    elif robustness == "standard":
+        print("  [Mode: STANDARD] GPT-4o contextual + speaker detection")
+        final = translate_gpt4o_contextual(client, ru_segments, full_ru)
+    elif robustness in ("hardened", "maximum"):
+        print("  [Mode: HARDENED] Dual translation + back-check + rules")
+        trans1 = translate_gpt4o_contextual(client, ru_segments, full_ru)
+        trans2 = translate_gpt4o_literal(client, ru_segments, full_ru)
+        back = back_translate_check(client, trans1["full_text"], full_ru)
+        final = resolve_translations(trans1, trans2, back, ru_segments)
+        final["back_translation_score"] = back["similarity_score"]
+    else:
+        final = translate_gpt4o_contextual(client, ru_segments, full_ru)
 
-    print("  [HARDEN] Method 3: Back-translation check...")
-    back_check = back_translate_check(client, trans1["full_text"], full_ru)
-
-    print("  [HARDEN] Cross-comparing and resolving discrepancies...")
-    final = resolve_translations(trans1, trans2, back_check, ru_segments)
+    # Apply rule engine post-processing
+    final = apply_rules(final, rules)
 
     # Save all variants for review
     variants = {
-        "method_1_contextual": trans1,
-        "method_2_literal": trans2,
-        "back_translation_score": back_check["similarity_score"],
-        "back_translation_russian": back_check["back_russian"],
+        "robustness": robustness,
+        "rules_applied": [r["id"] for r in rules["rules"]],
         "final": final
     }
+    if robustness in ("hardened", "maximum"):
+        variants["method_1_contextual"] = trans1
+        variants["method_2_literal"] = trans2
+        variants["back_translation"] = back
+
     with open(os.path.join(output_dir, "translation_variants.json"), "w", encoding="utf-8") as f:
         json.dump(variants, f, ensure_ascii=False, indent=2)
 
+    # Save original Russian
+    with open(os.path.join(output_dir, "original_russian.txt"), "w", encoding="utf-8") as f:
+        f.write(full_ru)
+
     return final
 
-def translate_gpt4o_contextual(client, ru_segments, full_ru):
-    """GPT-4o with full context awareness — understands arguments and implications."""
-    prompt = f"""You are translating a Russian educational video about Armenian history to English.
+def load_rules() -> dict:
+    """Load translation rules from repo."""
+    rules_path = os.path.join(os.path.dirname(__file__), "rules.json")
+    if os.path.exists(rules_path):
+        with open(rules_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {"rules": []}
 
-CRITICAL RULES:
-1. Preserve the EXACT logical structure of arguments. If someone says "X is not in Y, therefore X didn't exist," you MUST keep that implication.
-2. Do not soften, generalize, or reframe arguments. Translate what is ACTUALLY said.
-3. Distinguish between:
-   - Claims being presented (e.g., "They say Jesus never met Armenians")
-   - Counter-arguments (e.g., "But this ignores historical sources")
-4. If a statement implies non-existence from absence of mention, preserve that implication.
+def apply_rules(translation: dict, rules: dict) -> dict:
+    """Apply hardcoded rules to catch known translation errors."""
+    for rule in rules.get("rules", []):
+        if rule.get("severity") != "critical":
+            continue
+        incorrect = rule.get("pattern_en_incorrect", "")
+        correct = rule.get("pattern_en_correct", "")
 
-Russian transcript:
-{full_ru}
+        for seg in translation.get("segments", []):
+            text = seg.get("text", "")
+            # Check if incorrect pattern appears without correct pattern nearby
+            if incorrect.lower() in text.lower() and correct.lower() not in text.lower():
+                # Try to fix
+                seg["text"] = text.replace(incorrect, correct).replace(incorrect.capitalize(), correct.capitalize())
+                seg["rule_applied"] = rule["id"]
+                print(f"    [RULE {rule['id']}] Fixed: '{incorrect}' → '{correct}'")
+                rule["applied_count"] = rule.get("applied_count", 0) + 1
 
-Return JSON:
-{{"segments": [{{"speaker": "Naran", "text": "...", "start": 0.0, "end": 5.0}}]}}"""
+    # Rebuild full_text
+    translation["full_text"] = " ".join(s["text"] for s in translation.get("segments", []))
+    return translation
 
+def translate_google_only(ru_segments: list) -> dict:
+    from deep_translator import GoogleTranslator
+    translator = GoogleTranslator(source="ru", target="en")
+    segments = []
+    for seg in ru_segments:
+        txt = seg["text"].strip()
+        try:
+            en = translator.translate(txt)
+        except Exception:
+            en = txt
+        segments.append({"start": seg["start"], "end": seg["end"], "text": en, "speaker": "Naran"})
+    return {"full_text": " ".join(s["text"] for s in segments), "segments": segments}
+
+def translate_gpt4o_mini(client, ru_segments, full_ru):
+    prompt = f"Translate to English. Preserve negation exactly.\n\nRussian:\n{full_ru}\n\nReturn JSON: {{\"segments\": [{{\"speaker\": \"Naran\", \"text\": \"...\", \"start\": 0.0, \"end\": 5.0}}]}}"
     response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[
-            {"role": "system", "content": "Precise historical translator. Preserve argument logic exactly."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.1,
-        max_tokens=4000,
-        response_format={"type": "json_object"}
+        model="gpt-4o-mini", messages=[{"role": "user", "content": prompt}],
+        temperature=0.1, max_tokens=4000, response_format={"type": "json_object"}
     )
     result = json.loads(response.choices[0].message.content.strip())
     segments = result.get("segments", [])
-    full = " ".join(s["text"] for s in segments)
-    return {"full_text": full, "segments": segments}
+    return {"full_text": " ".join(s["text"] for s in segments), "segments": segments}
 
-def translate_gpt4o_literal(client, ru_segments, full_ru):
-    """GPT-4o-mini literal translation — word-for-word accuracy check."""
-    prompt = f"""Translate this Russian text to English literally and precisely.
-Do NOT reframe arguments. Do NOT add interpretation.
-Translate EXACTLY what is said, preserving all logical implications.
+def translate_gpt4o_contextual(client, ru_segments, full_ru):
+    prompt = f"""Translate Russian to English. PRESERVE ALL NEGATION EXACTLY.
+Rules:
+1. "не встречал" = "did NOT meet" (never "met")
+2. "армян нет" = "there are NO Armenians" (never "Armenians are")
+3. "не упоминаются" = "are NOT mentioned"
+4. Keep argument structure intact
 
 Russian:
 {full_ru}
 
-Return JSON: {{"segments": [{{"speaker": "Naran", "text": "...", "start": 0.0, "end": 5.0}}]}}"""
-
+Return JSON: {{"segments": [{"speaker": "Naran", "text": "...", "start": 0.0, "end": 5.0}]}}"""
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.1,
-        max_tokens=4000,
-        response_format={"type": "json_object"}
+        model="gpt-4o", messages=[
+            {"role": "system", "content": "Precise translator. NEVER flip negations."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.1, max_tokens=4000, response_format={"type": "json_object"}
     )
     result = json.loads(response.choices[0].message.content.strip())
     segments = result.get("segments", [])
-    full = " ".join(s["text"] for s in segments)
-    return {"full_text": full, "segments": segments}
+    return {"full_text": " ".join(s["text"] for s in segments), "segments": segments}
+
+def translate_gpt4o_literal(client, ru_segments, full_ru):
+    prompt = f"Literal translation. Word-for-word. Do NOT reframe.\n\nRussian:\n{full_ru}\n\nReturn JSON: {{\"segments\": [{{\"speaker\": \"Naran\", \"text\": \"...\", \"start\": 0.0, \"end\": 5.0}}]}}"
+    response = client.chat.completions.create(
+        model="gpt-4o-mini", messages=[{"role": "user", "content": prompt}],
+        temperature=0.1, max_tokens=4000, response_format={"type": "json_object"}
+    )
+    result = json.loads(response.choices[0].message.content.strip())
+    segments = result.get("segments", [])
+    return {"full_text": " ".join(s["text"] for s in segments), "segments": segments}
 
 def back_translate_check(client, english_text, original_russian):
-    """Translate English back to Russian and compare with original."""
-    prompt = f"""Translate this English text back to Russian. Be as literal as possible.
-
-English:
-{english_text}
-
-Return ONLY the Russian translation, nothing else."""
-
+    prompt = f"Translate this English back to Russian literally:\n\n{english_text}\n\nReturn ONLY Russian."
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.1,
-        max_tokens=2000
+        model="gpt-4o-mini", messages=[{"role": "user", "content": prompt}],
+        temperature=0.1, max_tokens=2000
     )
     back_ru = response.choices[0].message.content.strip()
-
-    # Simple similarity: word overlap ratio
     orig_words = set(original_russian.lower().split())
     back_words = set(back_ru.lower().split())
-    if orig_words:
-        overlap = len(orig_words & back_words) / len(orig_words)
-    else:
-        overlap = 0.0
-
-    return {
-        "back_russian": back_ru,
-        "similarity_score": round(overlap, 3),
-        "original_word_count": len(orig_words),
-        "back_word_count": len(back_words)
-    }
+    overlap = len(orig_words & back_words) / len(orig_words) if orig_words else 0.0
+    return {"back_russian": back_ru, "similarity_score": round(overlap, 3)}
 
 def resolve_translations(trans1, trans2, back_check, ru_segments):
-    """Compare two translations and pick the best, flagging discrepancies."""
-    segs1 = trans1["segments"]
-    segs2 = trans2["segments"]
-
-    # Use contextual (trans1) as base — it's better at argument structure
-    # But check each segment against literal (trans2) for key phrase accuracy
     final_segments = []
-
-    for i, seg1 in enumerate(segs1):
-        if i < len(segs2):
-            seg2 = segs2[i]
-            # If literal translation contains key phrases contextual missed, flag it
-            text1 = seg1["text"]
-            text2 = seg2["text"]
-
-            # Check for critical implication phrases
-            implication_phrases = ["didn't exist", "never existed", "not real", "fabricated", "made up"]
-            has_implication_1 = any(p in text1.lower() for p in implication_phrases)
-            has_implication_2 = any(p in text2.lower() for p in implication_phrases)
-
-            if has_implication_2 and not has_implication_1:
-                # Literal caught an implication contextual missed — use literal for this segment
-                print(f"    [FLAG] Segment {i}: Literal caught implication contextual missed. Using literal.")
-                final_segments.append({**seg1, "text": text2, "translation_confidence": "low_flagged"})
-            else:
-                final_segments.append({**seg1, "translation_confidence": "high"})
+    for i, seg1 in enumerate(trans1["segments"]):
+        seg2 = trans2["segments"][i] if i < len(trans2["segments"]) else seg1
+        text1, text2 = seg1["text"], seg2["text"]
+        # Check for negation flips
+        negation_words = ["not", "never", "no", "nothing", "nobody", "nowhere"]
+        has_neg1 = any(n in text1.lower() for n in negation_words)
+        has_neg2 = any(n in text2.lower() for n in negation_words)
+        if has_neg2 and not has_neg1:
+            final_segments.append({**seg1, "text": text2, "translation_confidence": "low_flagged"})
         else:
             final_segments.append({**seg1, "translation_confidence": "high"})
-
     full = " ".join(s["text"] for s in final_segments)
-    return {"full_text": full, "segments": final_segments, "back_translation_score": back_check["similarity_score"]}
+    return {"full_text": full, "segments": final_segments}
