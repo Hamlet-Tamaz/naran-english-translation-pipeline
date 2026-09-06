@@ -14,7 +14,6 @@ def translate_hardened(transcript: dict, output_dir: str, robustness: str = "sta
     ru_segments = [seg for seg in transcript.get("segments", []) if seg["text"].strip()]
     full_ru = " ".join(seg["text"].strip() for seg in ru_segments)
 
-    # Load rules
     rules = load_rules()
 
     if robustness == "free":
@@ -36,10 +35,8 @@ def translate_hardened(transcript: dict, output_dir: str, robustness: str = "sta
     else:
         final = translate_gpt4o_contextual(client, ru_segments, full_ru)
 
-    # Apply rule engine post-processing
     final = apply_rules(final, rules)
 
-    # Save all variants for review
     variants = {
         "robustness": robustness,
         "rules_applied": [r["id"] for r in rules["rules"]],
@@ -53,14 +50,12 @@ def translate_hardened(transcript: dict, output_dir: str, robustness: str = "sta
     with open(os.path.join(output_dir, "translation_variants.json"), "w", encoding="utf-8") as f:
         json.dump(variants, f, ensure_ascii=False, indent=2)
 
-    # Save original Russian
     with open(os.path.join(output_dir, "original_russian.txt"), "w", encoding="utf-8") as f:
         f.write(full_ru)
 
     return final
 
 def load_rules() -> dict:
-    """Load translation rules from repo."""
     rules_path = os.path.join(os.path.dirname(__file__), "rules.json")
     if os.path.exists(rules_path):
         with open(rules_path, "r", encoding="utf-8") as f:
@@ -68,7 +63,6 @@ def load_rules() -> dict:
     return {"rules": []}
 
 def apply_rules(translation: dict, rules: dict) -> dict:
-    """Apply hardcoded rules to catch known translation errors."""
     for rule in rules.get("rules", []):
         if rule.get("severity") != "critical":
             continue
@@ -77,15 +71,12 @@ def apply_rules(translation: dict, rules: dict) -> dict:
 
         for seg in translation.get("segments", []):
             text = seg.get("text", "")
-            # Check if incorrect pattern appears without correct pattern nearby
             if incorrect.lower() in text.lower() and correct.lower() not in text.lower():
-                # Try to fix
                 seg["text"] = text.replace(incorrect, correct).replace(incorrect.capitalize(), correct.capitalize())
                 seg["rule_applied"] = rule["id"]
-                print(f"    [RULE {rule['id']}] Fixed: '{incorrect}' → '{correct}'")
+                print(f"    [RULE {rule['id']}] Fixed: '{incorrect}' -> '{correct}'")
                 rule["applied_count"] = rule.get("applied_count", 0) + 1
 
-    # Rebuild full_text
     translation["full_text"] = " ".join(s["text"] for s in translation.get("segments", []))
     return translation
 
@@ -103,7 +94,7 @@ def translate_google_only(ru_segments: list) -> dict:
     return {"full_text": " ".join(s["text"] for s in segments), "segments": segments}
 
 def translate_gpt4o_mini(client, ru_segments, full_ru):
-    prompt = f"Translate to English. Preserve negation exactly.\n\nRussian:\n{full_ru}\n\nReturn JSON: {{\"segments\": [{{\"speaker\": \"Naran\", \"text\": \"...\", \"start\": 0.0, \"end\": 5.0}}]}}"
+    prompt = "Translate to English. Preserve negation exactly.\n\nRussian:\n" + full_ru + "\n\nReturn JSON with segments array."
     response = client.chat.completions.create(
         model="gpt-4o-mini", messages=[{"role": "user", "content": prompt}],
         temperature=0.1, max_tokens=4000, response_format={"type": "json_object"}
@@ -113,7 +104,7 @@ def translate_gpt4o_mini(client, ru_segments, full_ru):
     return {"full_text": " ".join(s["text"] for s in segments), "segments": segments}
 
 def translate_gpt4o_contextual(client, ru_segments, full_ru):
-    prompt = f"""Translate Russian to English. PRESERVE ALL NEGATION EXACTLY.
+    prompt = """Translate Russian to English. PRESERVE ALL NEGATION EXACTLY.
 Rules:
 1. "не встречал" = "did NOT meet" (never "met")
 2. "армян нет" = "there are NO Armenians" (never "Armenians are")
@@ -121,9 +112,9 @@ Rules:
 4. Keep argument structure intact
 
 Russian:
-{full_ru}
+""" + full_ru + """
 
-Return JSON: {{"segments": [{"speaker": "Naran", "text": "...", "start": 0.0, "end": 5.0}]}}"""
+Return JSON with segments array."""
     response = client.chat.completions.create(
         model="gpt-4o", messages=[
             {"role": "system", "content": "Precise translator. NEVER flip negations."},
@@ -136,7 +127,7 @@ Return JSON: {{"segments": [{"speaker": "Naran", "text": "...", "start": 0.0, "e
     return {"full_text": " ".join(s["text"] for s in segments), "segments": segments}
 
 def translate_gpt4o_literal(client, ru_segments, full_ru):
-    prompt = f"Literal translation. Word-for-word. Do NOT reframe.\n\nRussian:\n{full_ru}\n\nReturn JSON: {{\"segments\": [{{\"speaker\": \"Naran\", \"text\": \"...\", \"start\": 0.0, \"end\": 5.0}}]}}"
+    prompt = "Literal translation. Word-for-word. Do NOT reframe.\n\nRussian:\n" + full_ru + "\n\nReturn JSON with segments array."
     response = client.chat.completions.create(
         model="gpt-4o-mini", messages=[{"role": "user", "content": prompt}],
         temperature=0.1, max_tokens=4000, response_format={"type": "json_object"}
@@ -146,7 +137,7 @@ def translate_gpt4o_literal(client, ru_segments, full_ru):
     return {"full_text": " ".join(s["text"] for s in segments), "segments": segments}
 
 def back_translate_check(client, english_text, original_russian):
-    prompt = f"Translate this English back to Russian literally:\n\n{english_text}\n\nReturn ONLY Russian."
+    prompt = "Translate this English back to Russian literally:\n\n" + english_text + "\n\nReturn ONLY Russian."
     response = client.chat.completions.create(
         model="gpt-4o-mini", messages=[{"role": "user", "content": prompt}],
         temperature=0.1, max_tokens=2000
@@ -162,7 +153,6 @@ def resolve_translations(trans1, trans2, back_check, ru_segments):
     for i, seg1 in enumerate(trans1["segments"]):
         seg2 = trans2["segments"][i] if i < len(trans2["segments"]) else seg1
         text1, text2 = seg1["text"], seg2["text"]
-        # Check for negation flips
         negation_words = ["not", "never", "no", "nothing", "nobody", "nowhere"]
         has_neg1 = any(n in text1.lower() for n in negation_words)
         has_neg2 = any(n in text2.lower() for n in negation_words)
