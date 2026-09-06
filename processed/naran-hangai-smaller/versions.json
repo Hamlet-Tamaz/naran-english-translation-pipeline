@@ -70,6 +70,17 @@
       ],
       "voiceover_duration": 315.048,
       "back_translation_score": 0.584
+    },
+    {
+      "number": 8,
+      "folder": "v8",
+      "robustness": "maximum",
+      "speakers_found": [
+        "Kamran",
+        "Naran"
+      ],
+      "voiceover_duration": 315.048,
+      "back_translation_score": 0.574
     }
   ]
 }
