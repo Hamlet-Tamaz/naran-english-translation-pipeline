@@ -1,0 +1,680 @@
+{
+  "robustness": "maximum",
+  "rules_applied": [
+    "rule_001",
+    "rule_002",
+    "rule_003",
+    "rule_004"
+  ],
+  "final": {
+    "full_text": "Kamran Razmavar presents another country's argument, and Sus did not meet Armenians, but in the Bible, as if there are NO Armenians at all, so ancient Armenia is invented. But the existence of countries and peoples is NOT established this way. And now let's dispel this myth about Great Armenia, which allegedly included Jerusalem. According to Wikipedia, Great Armenia therefore did not exist from the fourth century, so our calculations are approximately by the fifth. And somewhere in the middle of these 80 years, Jesus was born in Bethlehem, by the way, it's near Jerusalem. Strangely, NOT a single Armenian did meet Jesus. There is NOTHING Armenian in the Bible. There is NO great Armenia, there are dozens of state nationalities and NOT ethnicities. But there are NO Armenians, NO Armenia, and there's NO need to insert it there, it says 'Mountains of Ararat'. This is a geographical term. The Gospels are NOT a list of all the peoples of the Near East. The absence of a people in the story of Christ's life does NOT mean their absence in history. Moreover, the name Armenia is recorded approximately 5 centuries before the birth of Jesus. Around 520 BC, Darius the First left the Behistun inscription. In the Old Persian text, the country is called 'Armina and the inhabitants Armenians'. The Encyclopedia Iranica translates the latter as Armenia. Now to Kamran's claim that the Bible has Ararat but NO Armenia. Even this is NOT true if we talk about Biblical translations in general. In the classic English King James Bible translation, in 2 Kings 19:37 and in the book of Isaiah 37:38, the expression 'land of Armenia' is directly used. In modern translations, the 'land of Ararat' is more often used in these places. And this shows the main problem with Kamran's argument. Different linguistic and translation traditions can convey ancient geographical names differently. This is also seen in the Behistun inscription. The ancient Persian version uses the name Armina, while the Babylonian uses Urartu, which is the old Mesopotamian name for the region. There are independent Greek testimonies. Herodotus in the fifth century BC mentions Armenians. Xenophon in the early 4th century BC repeatedly writes about Armenia and Armenians. Therefore, Kamran's question of why Jesus did NOT meet Armenians proves NOTHING historically. Persian and Greek sources record Armenia and Armenians centuries before Christ. And the attempt to prove the absence of Armenia with the word 'Ararat' collapses on the sources themselves. Kamran simply mixes different linguistic traditions and takes the difference in names for the absence of a country.",
+    "segments": [
+      {
+        "start": 0,
+        "end": 10,
+        "text": "Kamran Razmavar presents another country's argument, and Sus did not meet Armenians, but in the Bible, as if there are NO Armenians at all, so ancient Armenia is invented.",
+        "speaker": "Narrator",
+        "translation_confidence": "high",
+        "rule_applied": "rule_001"
+      },
+      {
+        "start": 11,
+        "end": 20,
+        "text": "But the existence of countries and peoples is NOT established this way.",
+        "speaker": "Narrator",
+        "translation_confidence": "high"
+      },
+      {
+        "start": 21,
+        "end": 30,
+        "text": "And now let's dispel this myth about Great Armenia, which allegedly included Jerusalem.",
+        "speaker": "Narrator",
+        "translation_confidence": "high"
+      },
+      {
+        "start": 31,
+        "end": 40,
+        "text": "According to Wikipedia, Great Armenia therefore did not exist from the fourth century, so our calculations are approximately by the fifth.",
+        "speaker": "Narrator",
+        "translation_confidence": "high",
+        "rule_applied": "rule_004"
+      },
+      {
+        "start": 41,
+        "end": 50,
+        "text": "And somewhere in the middle of these 80 years, Jesus was born in Bethlehem, by the way, it's near Jerusalem.",
+        "speaker": "Narrator",
+        "translation_confidence": "high"
+      },
+      {
+        "start": 51,
+        "end": 60,
+        "text": "Strangely, NOT a single Armenian did meet Jesus.",
+        "speaker": "Narrator",
+        "translation_confidence": "high"
+      },
+      {
+        "start": 61,
+        "end": 70,
+        "text": "There is NOTHING Armenian in the Bible.",
+        "speaker": "Narrator",
+        "translation_confidence": "high"
+      },
+      {
+        "start": 71,
+        "end": 80,
+        "text": "There is NO great Armenia, there are dozens of state nationalities and NOT ethnicities.",
+        "speaker": "Narrator",
+        "translation_confidence": "high"
+      },
+      {
+        "start": 81,
+        "end": 90,
+        "text": "But there are NO Armenians, NO Armenia, and there's NO need to insert it there, it says 'Mountains of Ararat'.",
+        "speaker": "Narrator",
+        "translation_confidence": "high"
+      },
+      {
+        "start": 91,
+        "end": 100,
+        "text": "This is a geographical term.",
+        "speaker": "Narrator",
+        "translation_confidence": "high"
+      },
+      {
+        "start": 101,
+        "end": 110,
+        "text": "The Gospels are NOT a list of all the peoples of the Near East.",
+        "speaker": "Narrator",
+        "translation_confidence": "high"
+      },
+      {
+        "start": 111,
+        "end": 120,
+        "text": "The absence of a people in the story of Christ's life does NOT mean their absence in history.",
+        "speaker": "Narrator",
+        "translation_confidence": "high"
+      },
+      {
+        "start": 121,
+        "end": 130,
+        "text": "Moreover, the name Armenia is recorded approximately 5 centuries before the birth of Jesus.",
+        "speaker": "Narrator",
+        "translation_confidence": "high"
+      },
+      {
+        "start": 131,
+        "end": 140,
+        "text": "Around 520 BC, Darius the First left the Behistun inscription.",
+        "speaker": "Narrator",
+        "translation_confidence": "high"
+      },
+      {
+        "start": 141,
+        "end": 150,
+        "text": "In the Old Persian text, the country is called 'Armina and the inhabitants Armenians'.",
+        "speaker": "Narrator",
+        "translation_confidence": "high"
+      },
+      {
+        "start": 151,
+        "end": 160,
+        "text": "The Encyclopedia Iranica translates the latter as Armenia.",
+        "speaker": "Narrator",
+        "translation_confidence": "high"
+      },
+      {
+        "start": 161,
+        "end": 170,
+        "text": "Now to Kamran's claim that the Bible has Ararat but NO Armenia.",
+        "speaker": "Narrator",
+        "translation_confidence": "high"
+      },
+      {
+        "start": 171,
+        "end": 180,
+        "text": "Even this is NOT true if we talk about Biblical translations in general.",
+        "speaker": "Narrator",
+        "translation_confidence": "high"
+      },
+      {
+        "start": 181,
+        "end": 190,
+        "text": "In the classic English King James Bible translation, in 2 Kings 19:37 and in the book of Isaiah 37:38, the expression 'land of Armenia' is directly used.",
+        "speaker": "Narrator",
+        "translation_confidence": "high"
+      },
+      {
+        "start": 191,
+        "end": 200,
+        "text": "In modern translations, the 'land of Ararat' is more often used in these places.",
+        "speaker": "Narrator",
+        "translation_confidence": "high"
+      },
+      {
+        "start": 201,
+        "end": 210,
+        "text": "And this shows the main problem with Kamran's argument.",
+        "speaker": "Narrator",
+        "translation_confidence": "high"
+      },
+      {
+        "start": 211,
+        "end": 220,
+        "text": "Different linguistic and translation traditions can convey ancient geographical names differently.",
+        "speaker": "Narrator",
+        "translation_confidence": "high"
+      },
+      {
+        "start": 221,
+        "end": 230,
+        "text": "This is also seen in the Behistun inscription.",
+        "speaker": "Narrator",
+        "translation_confidence": "high"
+      },
+      {
+        "start": 231,
+        "end": 240,
+        "text": "The ancient Persian version uses the name Armina, while the Babylonian uses Urartu, which is the old Mesopotamian name for the region.",
+        "speaker": "Narrator",
+        "translation_confidence": "high"
+      },
+      {
+        "start": 241,
+        "end": 250,
+        "text": "There are independent Greek testimonies.",
+        "speaker": "Narrator",
+        "translation_confidence": "high"
+      },
+      {
+        "start": 251,
+        "end": 260,
+        "text": "Herodotus in the fifth century BC mentions Armenians.",
+        "speaker": "Narrator",
+        "translation_confidence": "high"
+      },
+      {
+        "start": 261,
+        "end": 270,
+        "text": "Xenophon in the early 4th century BC repeatedly writes about Armenia and Armenians.",
+        "speaker": "Narrator",
+        "translation_confidence": "high"
+      },
+      {
+        "start": 271,
+        "end": 280,
+        "text": "Therefore, Kamran's question of why Jesus did NOT meet Armenians proves NOTHING historically.",
+        "speaker": "Narrator",
+        "translation_confidence": "high"
+      },
+      {
+        "start": 281,
+        "end": 290,
+        "text": "Persian and Greek sources record Armenia and Armenians centuries before Christ.",
+        "speaker": "Narrator",
+        "translation_confidence": "high"
+      },
+      {
+        "start": 291,
+        "end": 300,
+        "text": "And the attempt to prove the absence of Armenia with the word 'Ararat' collapses on the sources themselves.",
+        "speaker": "Narrator",
+        "translation_confidence": "high"
+      },
+      {
+        "start": 301,
+        "end": 310,
+        "text": "Kamran simply mixes different linguistic traditions and takes the difference in names for the absence of a country.",
+        "speaker": "Narrator",
+        "translation_confidence": "high"
+      }
+    ],
+    "back_translation_score": 0.584
+  },
+  "method_1_contextual": {
+    "full_text": "Kamran Razmavar presents another country's argument, and Sus met Armenians, but in the Bible, as if there are NO Armenians at all, so ancient Armenia is invented. But the existence of countries and peoples is NOT established this way. And now let's dispel this myth about Great Armenia, which allegedly included Jerusalem. According to Wikipedia, Great Armenia existed from the fourth century, so our calculations are approximately by the fifth. And somewhere in the middle of these 80 years, Jesus was born in Bethlehem, by the way, it's near Jerusalem. Strangely, NOT a single Armenian did meet Jesus. There is NOTHING Armenian in the Bible. There is NO great Armenia, there are dozens of state nationalities and NOT ethnicities. But there are NO Armenians, NO Armenia, and there's NO need to insert it there, it says 'Mountains of Ararat'. This is a geographical term. The Gospels are NOT a list of all the peoples of the Near East. The absence of a people in the story of Christ's life does NOT mean their absence in history. Moreover, the name Armenia is recorded approximately 5 centuries before the birth of Jesus. Around 520 BC, Darius the First left the Behistun inscription. In the Old Persian text, the country is called 'Armina and the inhabitants Armenians'. The Encyclopedia Iranica translates the latter as Armenia. Now to Kamran's claim that the Bible has Ararat but NO Armenia. Even this is NOT true if we talk about Biblical translations in general. In the classic English King James Bible translation, in 2 Kings 19:37 and in the book of Isaiah 37:38, the expression 'land of Armenia' is directly used. In modern translations, the 'land of Ararat' is more often used in these places. And this shows the main problem with Kamran's argument. Different linguistic and translation traditions can convey ancient geographical names differently. This is also seen in the Behistun inscription. The ancient Persian version uses the name Armina, while the Babylonian uses Urartu, which is the old Mesopotamian name for the region. There are independent Greek testimonies. Herodotus in the fifth century BC mentions Armenians. Xenophon in the early 4th century BC repeatedly writes about Armenia and Armenians. Therefore, Kamran's question of why Jesus did NOT meet Armenians proves NOTHING historically. Persian and Greek sources record Armenia and Armenians centuries before Christ. And the attempt to prove the absence of Armenia with the word 'Ararat' collapses on the sources themselves. Kamran simply mixes different linguistic traditions and takes the difference in names for the absence of a country.",
+    "segments": [
+      {
+        "start": 0,
+        "end": 10,
+        "text": "Kamran Razmavar presents another country's argument, and Sus met Armenians, but in the Bible, as if there are NO Armenians at all, so ancient Armenia is invented.",
+        "speaker": "Narrator"
+      },
+      {
+        "start": 11,
+        "end": 20,
+        "text": "But the existence of countries and peoples is NOT established this way.",
+        "speaker": "Narrator"
+      },
+      {
+        "start": 21,
+        "end": 30,
+        "text": "And now let's dispel this myth about Great Armenia, which allegedly included Jerusalem.",
+        "speaker": "Narrator"
+      },
+      {
+        "start": 31,
+        "end": 40,
+        "text": "According to Wikipedia, Great Armenia existed from the fourth century, so our calculations are approximately by the fifth.",
+        "speaker": "Narrator"
+      },
+      {
+        "start": 41,
+        "end": 50,
+        "text": "And somewhere in the middle of these 80 years, Jesus was born in Bethlehem, by the way, it's near Jerusalem.",
+        "speaker": "Narrator"
+      },
+      {
+        "start": 51,
+        "end": 60,
+        "text": "Strangely, NOT a single Armenian did meet Jesus.",
+        "speaker": "Narrator"
+      },
+      {
+        "start": 61,
+        "end": 70,
+        "text": "There is NOTHING Armenian in the Bible.",
+        "speaker": "Narrator"
+      },
+      {
+        "start": 71,
+        "end": 80,
+        "text": "There is NO great Armenia, there are dozens of state nationalities and NOT ethnicities.",
+        "speaker": "Narrator"
+      },
+      {
+        "start": 81,
+        "end": 90,
+        "text": "But there are NO Armenians, NO Armenia, and there's NO need to insert it there, it says 'Mountains of Ararat'.",
+        "speaker": "Narrator"
+      },
+      {
+        "start": 91,
+        "end": 100,
+        "text": "This is a geographical term.",
+        "speaker": "Narrator"
+      },
+      {
+        "start": 101,
+        "end": 110,
+        "text": "The Gospels are NOT a list of all the peoples of the Near East.",
+        "speaker": "Narrator"
+      },
+      {
+        "start": 111,
+        "end": 120,
+        "text": "The absence of a people in the story of Christ's life does NOT mean their absence in history.",
+        "speaker": "Narrator"
+      },
+      {
+        "start": 121,
+        "end": 130,
+        "text": "Moreover, the name Armenia is recorded approximately 5 centuries before the birth of Jesus.",
+        "speaker": "Narrator"
+      },
+      {
+        "start": 131,
+        "end": 140,
+        "text": "Around 520 BC, Darius the First left the Behistun inscription.",
+        "speaker": "Narrator"
+      },
+      {
+        "start": 141,
+        "end": 150,
+        "text": "In the Old Persian text, the country is called 'Armina and the inhabitants Armenians'.",
+        "speaker": "Narrator"
+      },
+      {
+        "start": 151,
+        "end": 160,
+        "text": "The Encyclopedia Iranica translates the latter as Armenia.",
+        "speaker": "Narrator"
+      },
+      {
+        "start": 161,
+        "end": 170,
+        "text": "Now to Kamran's claim that the Bible has Ararat but NO Armenia.",
+        "speaker": "Narrator"
+      },
+      {
+        "start": 171,
+        "end": 180,
+        "text": "Even this is NOT true if we talk about Biblical translations in general.",
+        "speaker": "Narrator"
+      },
+      {
+        "start": 181,
+        "end": 190,
+        "text": "In the classic English King James Bible translation, in 2 Kings 19:37 and in the book of Isaiah 37:38, the expression 'land of Armenia' is directly used.",
+        "speaker": "Narrator"
+      },
+      {
+        "start": 191,
+        "end": 200,
+        "text": "In modern translations, the 'land of Ararat' is more often used in these places.",
+        "speaker": "Narrator"
+      },
+      {
+        "start": 201,
+        "end": 210,
+        "text": "And this shows the main problem with Kamran's argument.",
+        "speaker": "Narrator"
+      },
+      {
+        "start": 211,
+        "end": 220,
+        "text": "Different linguistic and translation traditions can convey ancient geographical names differently.",
+        "speaker": "Narrator"
+      },
+      {
+        "start": 221,
+        "end": 230,
+        "text": "This is also seen in the Behistun inscription.",
+        "speaker": "Narrator"
+      },
+      {
+        "start": 231,
+        "end": 240,
+        "text": "The ancient Persian version uses the name Armina, while the Babylonian uses Urartu, which is the old Mesopotamian name for the region.",
+        "speaker": "Narrator"
+      },
+      {
+        "start": 241,
+        "end": 250,
+        "text": "There are independent Greek testimonies.",
+        "speaker": "Narrator"
+      },
+      {
+        "start": 251,
+        "end": 260,
+        "text": "Herodotus in the fifth century BC mentions Armenians.",
+        "speaker": "Narrator"
+      },
+      {
+        "start": 261,
+        "end": 270,
+        "text": "Xenophon in the early 4th century BC repeatedly writes about Armenia and Armenians.",
+        "speaker": "Narrator"
+      },
+      {
+        "start": 271,
+        "end": 280,
+        "text": "Therefore, Kamran's question of why Jesus did NOT meet Armenians proves NOTHING historically.",
+        "speaker": "Narrator"
+      },
+      {
+        "start": 281,
+        "end": 290,
+        "text": "Persian and Greek sources record Armenia and Armenians centuries before Christ.",
+        "speaker": "Narrator"
+      },
+      {
+        "start": 291,
+        "end": 300,
+        "text": "And the attempt to prove the absence of Armenia with the word 'Ararat' collapses on the sources themselves.",
+        "speaker": "Narrator"
+      },
+      {
+        "start": 301,
+        "end": 310,
+        "text": "Kamran simply mixes different linguistic traditions and takes the difference in names for the absence of a country.",
+        "speaker": "Narrator"
+      }
+    ]
+  },
+  "method_2_literal": {
+    "full_text": "Камрана Размовар приводит еще один страна аргумент, и Сусский встретил армян, а в Библии, как бы вообще нет армений, значит древняя армения выдумана. Но существование стран и народов так не устанавливают. А теперь давайте этот миф о Велико-Армении, состав, который входил и Русалима развеи. По утверждению Википедии, Велико-Армении существовалась четвертого века, то наши рей примерно по пятой. И где-то посередине вот этих вот 80 лет родился и в Вифлене, кстати, это рядом с Ирусалимом. И Сус Христос. Как ни странно ни один арминин не встретился Иисусу. В Библии нет ничего армянных. Нет никакой великой арминь есть десятки государственных национальности и не заэтноцев. Но нет ни армян, ни арминь, ни надо пихать это там, написано «Арорадские горы». Это географический термин. Ивангелий не является перечнем всех народов ближнего востока. Осутствие народа в рассказе о жизни Христа не означает его отсутствие в истории. Тем более название арминьи фиксируется примерно за 5 веков до рождения Иисуса. Около 520 года до нашей эры дарии первая оставила бихистусскую надпись. Дринеперсиском тексте страна называется «Армина о южителя Армении». Инциклопедия Ираника переводит последнее как армянья. Теперь к утверждению Камрана, что в Библии есть арорад, но нет армений. Даже это неверно, если говорить о Библейских переводах вообще. В классическом английском переводе Библии короля Яклов, 4 книги ЦАС-19 главе 37-го стихе и в книге «Про Рока Исаэ» 37-го главе 38-го стихе прямо используется выражение земля Армения. В современных переводах в этих же местах чаще используется земля Арарад. И это показывает главную проблему аргумиата Камрану. Разные языковые и переводческие традиции могут передавать древние географические названия по-разному. Это видно еще в бихистусской надписи. Древние персиска версии используют название армина, а во велоско-урас, что, то есть старая месапутанская название «урарту» существовавшего рання в том же регионе. Есть независимые греческие свидетельства. Геродот с пятом веки до нашей эру поминает армян. Ксиновон в начале 4-го века до нашей эры неоднократно пишет об армении и армянах. Поэтому вопрос Камрана, почему Иисус не встретил армян исторически ничего не доказывает. Персиски и глические источники фиксируют армению и армян в за столетие «дорожделних христа». А попытка доказать отсутствие армении словом «арарат» рушится на самих источниках. Камран просто смешивает разные языковые традиции и принимает различие названия за отсутствие страны.",
+    "segments": [
+      {
+        "start": 0,
+        "end": 10,
+        "text": "Камрана Размовар приводит еще один страна аргумент,",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 10,
+        "end": 20,
+        "text": "и Сусский встретил армян, а в Библии, как бы вообще нет армений,",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 20,
+        "end": 30,
+        "text": "значит древняя армения выдумана.",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 30,
+        "end": 40,
+        "text": "Но существование стран и народов так не устанавливают.",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 40,
+        "end": 50,
+        "text": "А теперь давайте этот миф о Велико-Армении,",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 50,
+        "end": 60,
+        "text": "состав, который входил и Русалима развеи.",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 60,
+        "end": 70,
+        "text": "По утверждению Википедии, Велико-Армении существовалась четвертого века,",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 70,
+        "end": 80,
+        "text": "то наши рей примерно по пятой.",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 80,
+        "end": 90,
+        "text": "И где-то посередине вот этих вот 80 лет родился и в Вифлене,",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 90,
+        "end": 100,
+        "text": "кстати, это рядом с Ирусалимом.",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 100,
+        "end": 110,
+        "text": "И Сус Христос.",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 110,
+        "end": 120,
+        "text": "Как ни странно ни один арминин не встретился Иисусу.",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 120,
+        "end": 130,
+        "text": "В Библии нет ничего армянных.",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 130,
+        "end": 140,
+        "text": "Нет никакой великой арминь есть десятки государственных национальности и не заэтноцев.",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 140,
+        "end": 150,
+        "text": "Но нет ни армян, ни арминь, ни надо пихать это там,",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 150,
+        "end": 160,
+        "text": "написано «Арорадские горы».",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 160,
+        "end": 170,
+        "text": "Это географический термин.",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 170,
+        "end": 180,
+        "text": "Ивангелий не является перечнем всех народов ближнего востока.",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 180,
+        "end": 190,
+        "text": "Осутствие народа в рассказе о жизни Христа не означает его отсутствие в истории.",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 190,
+        "end": 200,
+        "text": "Тем более название арминьи фиксируется примерно за 5 веков до рождения Иисуса.",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 200,
+        "end": 210,
+        "text": "Около 520 года до нашей эры дарии первая оставила бихистусскую надпись.",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 210,
+        "end": 220,
+        "text": "Дринеперсиском тексте страна называется «Армина о южителя Армении».",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 220,
+        "end": 230,
+        "text": "Инциклопедия Ираника переводит последнее как армянья.",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 230,
+        "end": 240,
+        "text": "Теперь к утверждению Камрана, что в Библии есть арорад, но нет армений.",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 240,
+        "end": 250,
+        "text": "Даже это неверно, если говорить о Библейских переводах вообще.",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 250,
+        "end": 260,
+        "text": "В классическом английском переводе Библии короля Яклов,",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 260,
+        "end": 270,
+        "text": "4 книги ЦАС-19 главе 37-го стихе и в книге «Про Рока Исаэ» 37-го главе 38-го стихе",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 270,
+        "end": 280,
+        "text": "прямо используется выражение земля Армения.",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 280,
+        "end": 290,
+        "text": "В современных переводах в этих же местах чаще используется земля Арарад.",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 290,
+        "end": 300,
+        "text": "И это показывает главную проблему аргумиата Камрану.",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 300,
+        "end": 310,
+        "text": "Разные языковые и переводческие традиции могут передавать древние географические названия по-разному.",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 310,
+        "end": 320,
+        "text": "Это видно еще в бихистусской надписи.",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 320,
+        "end": 330,
+        "text": "Древние персиска версии используют название армина,",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 330,
+        "end": 340,
+        "text": "а во велоско-урас, что, то есть старая месапутанская название «урарту» существовавшего рання в том же регионе.",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 340,
+        "end": 350,
+        "text": "Есть независимые греческие свидетельства.",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 350,
+        "end": 360,
+        "text": "Геродот с пятом веки до нашей эру поминает армян.",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 360,
+        "end": 370,
+        "text": "Ксиновон в начале 4-го века до нашей эры неоднократно пишет об армении и армянах.",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 370,
+        "end": 380,
+        "text": "Поэтому вопрос Камрана, почему Иисус не встретил армян исторически ничего не доказывает.",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 380,
+        "end": 390,
+        "text": "Персиски и глические источники фиксируют армению и армян в за столетие «дорожделних христа».",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 390,
+        "end": 400,
+        "text": "А попытка доказать отсутствие армении словом «арарат» рушится на самих источниках.",
+        "speaker": "Speaker 1"
+      },
+      {
+        "start": 400,
+        "end": 410,
+        "text": "Камран просто смешивает разные языковые традиции и принимает различие названия за отсутствие страны.",
+        "speaker": "Speaker 1"
+      }
+    ]
+  },
+  "back_translation": {
+    "back_russian": "Камран Размавар представляет аргумент другой страны, а Сус встречался с армянами, но в Библии, как будто армян вообще нет, так что древняя Армения выдумана. Но существование стран и народов НЕ устанавливается таким образом. А теперь давайте развеем этот миф о Великой Армении, которая якобы включала Иерусалим. Согласно Википедии, Великая Армения существовала с четвертого века, так что наши расчеты примерно к пятому. И где-то посередине этих 80 лет Иисус родился в Вифлееме, кстати, это рядом с Иерусалимом. Странно, НИ ОДИН армянин не встретил Иисуса. В Библии НИЧЕГО армянского. НЕТ великой Армении, есть десятки государственных национальностей и НЕТ этнических групп. Но НЕТ армян, НЕТ Армении, и нет необходимости вставлять это туда, там написано 'Горы Арарат'. Это географический термин. Евангелия НЕ являются списком всех народов Ближнего Востока. Отсутствие народа в рассказе о жизни Христа НЕ означает их отсутствие в истории. Более того, название Армения зафиксировано примерно за 5 веков до рождения Иисуса. Около 520 года до нашей эры Дарий Первый оставил Бехистунскую надпись. В древнеперсидском тексте страна называется 'Армина, а жители - армяне'. Энциклопедия Ираника переводит последнее как Армения. Теперь к утверждению Камрана, что в Библии есть Арарат, но НЕТ Армении. Даже это НЕ правда, если говорить о библейских переводах в целом. В классическом английском переводе Библии короля Якова, в 2 Царств 19:37 и в книге Исайи 37:38, прямо используется выражение 'земля Армении'. В современных переводах чаще используется 'земля Арарат'. И это показывает основную проблему с аргументом Камрана. Разные языковые и переводческие традиции могут по-разному передавать древние географические названия. Это также видно в Бехистунской надписи. Древнеперсидская версия использует название Армина, в то время как вавилонская использует Урарту, что является старым месопотамским названием для региона. Есть независимые греческие свидетельства. Геродот в пятом веке до нашей эры упоминает армян. Ксенофонт в начале 4 века до нашей эры неоднократно пишет об Армении и армянах. Поэтому вопрос Камрана о том, почему Иисус не встретил армян, НИЧЕГО не доказывает исторически. Персидские и греческие источники фиксируют Армению и армян за века до Христа. И попытка доказать отсутствие Армении с помощью слова 'Арарат' рушится на самих источниках. Камран просто смешивает разные языковые традиции и принимает различие в названиях за отсутствие страны.",
+    "similarity_score": 0.584
+  }
+}

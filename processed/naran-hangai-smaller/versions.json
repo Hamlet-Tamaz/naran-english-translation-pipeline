@@ -60,6 +60,16 @@
       ],
       "voiceover_duration": 315.048,
       "back_translation_score": 0.568
+    },
+    {
+      "number": 7,
+      "folder": "v7",
+      "robustness": "maximum",
+      "speakers_found": [
+        "Narrator"
+      ],
+      "voiceover_duration": 315.048,
+      "back_translation_score": 0.584
     }
   ]
 }
