@@ -134,6 +134,18 @@
       ],
       "voiceover_duration": 179.184,
       "back_translation_score": 0
+    },
+    {
+      "number": 14,
+      "folder": "v14",
+      "robustness": "maximum",
+      "speakers_found": [
+        "Kamran",
+        "Naran",
+        "Other Speaker"
+      ],
+      "voiceover_duration": 153.096,
+      "back_translation_score": 0
     }
   ]
 }
