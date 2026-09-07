@@ -1,7 +1,6 @@
 import os
 import subprocess
 import re
-import math
 
 def generate_srt(segments, output_path):
     with open(output_path, "w", encoding="utf-8") as f:
@@ -101,25 +100,48 @@ def format_ass_time(seconds):
     centis = int((seconds % 1) * 100)
     return f"{hours}:{minutes:02d}:{secs:02d}.{centis:02d}"
 
-def burn(video_path, subtitle_path, output_path, font_path=None):
-    if subtitle_path.endswith(".ass"):
-        vf = f"subtitles={subtitle_path}:force_style='FontName=DejaVu Sans'"
-    else:
-        vf = f"subtitles={subtitle_path}"
-    cmd = [
-        "ffmpeg", "-y", "-i", video_path,
-        "-vf", vf,
-        "-c:a", "copy",
-        "-c:s", "copy",
-        output_path
-    ]
-    subprocess.run(cmd, check=True)
-
-def generate(video_path, translation, output_dir):
+def burn(video_path, translation, voiceover_path, voiceover_duration, output_dir):
+    """Burn subtitles into video and mix with voiceover audio."""
     segments = translation.get("segments", [])
+
+    # Generate subtitle files
     srt_path = os.path.join(output_dir, "subtitles.srt")
     ass_path = os.path.join(output_dir, "subtitles.ass")
     generate_srt(segments, srt_path)
     generate_ass(segments, ass_path, video_path)
     print(f"  Subtitles: {len(segments)} segments -> {srt_path}, {ass_path}")
-    return srt_path, ass_path
+
+    # Output paths
+    final_path = os.path.join(output_dir, "final.mp4")
+    temp_video = os.path.join(output_dir, "temp_video.mp4")
+
+    # Step 1: Burn subtitles into video using ASS
+    vf = f"subtitles={ass_path}:force_style='FontName=DejaVu Sans'"
+    cmd1 = [
+        "ffmpeg", "-y", "-i", video_path,
+        "-vf", vf,
+        "-c:a", "copy",
+        temp_video
+    ]
+    subprocess.run(cmd1, check=True, capture_output=True)
+
+    # Step 2: Mix voiceover audio (replace original audio)
+    cmd2 = [
+        "ffmpeg", "-y",
+        "-i", temp_video,
+        "-i", voiceover_path,
+        "-map", "0:v:0",
+        "-map", "1:a:0",
+        "-c:v", "copy",
+        "-c:a", "aac", "-b:a", "192k",
+        "-shortest",
+        final_path
+    ]
+    subprocess.run(cmd2, check=True, capture_output=True)
+
+    # Cleanup temp
+    if os.path.exists(temp_video):
+        os.remove(temp_video)
+
+    print(f"  Final video: {final_path}")
+    return final_path
