@@ -101,6 +101,17 @@
       ],
       "voiceover_duration": 152.928,
       "back_translation_score": 0
+    },
+    {
+      "number": 11,
+      "folder": "v11",
+      "robustness": "maximum",
+      "speakers_found": [
+        "Naran",
+        "Other Speaker"
+      ],
+      "voiceover_duration": 153.264,
+      "back_translation_score": 0
     }
   ]
 }
