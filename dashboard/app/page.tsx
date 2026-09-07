@@ -39,6 +39,7 @@ export default function Dashboard() {
   const [checkingEnv, setCheckingEnv] = useState(true);
   const [processingFile, setProcessingFile] = useState<string | null>(null);
   const [robustness, setRobustness] = useState("standard");
+  const triggerLock = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [previewVideo, setPreviewVideo] = useState<string | null>(null);
@@ -58,6 +59,8 @@ export default function Dashboard() {
   useEffect(() => {
     const token = localStorage.getItem("naran_auth");
     if (token) setIsAuthenticated(true);
+    const savedRobustness = localStorage.getItem("naran_robustness");
+    if (savedRobustness) setRobustness(savedRobustness);
   }, []);
 
   useEffect(() => {
@@ -129,6 +132,8 @@ export default function Dashboard() {
   }
 
   async function triggerPipeline(filename: string) {
+    if (triggerLock.current) return; // hard guard against double-fire
+    triggerLock.current = true;
     setProcessingFile(filename);
     setMessage(`Processing [${robustness}]... Takes ~5-10 minutes.`);
     try {
@@ -139,9 +144,12 @@ export default function Dashboard() {
       });
       const data = await res.json();
       setMessage(data.message || "Pipeline triggered!");
+      if (!res.ok) setProcessingFile(null);
     } catch (e) {
       setMessage("Error triggering pipeline.");
       setProcessingFile(null);
+    } finally {
+      triggerLock.current = false;
     }
   }
 
@@ -276,7 +284,7 @@ export default function Dashboard() {
         <div style={{ fontSize: 13, fontWeight: 500, color: "#d4d4d8", marginBottom: 12 }}>Translation Robustness</div>
         <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
           {ROBUSTNESS_LEVELS.map((level) => (
-            <button key={level.key} onClick={() => setRobustness(level.key)}
+            <button key={level.key} onClick={() => { setRobustness(level.key); localStorage.setItem("naran_robustness", level.key); }}
               style={{ flex: 1, padding: "10px 8px", borderRadius: 8, border: "1px solid", borderColor: robustness === level.key ? level.color : "#27272a", background: robustness === level.key ? `${level.color}20` : "transparent", color: robustness === level.key ? level.color : "#71717a", fontSize: 12, fontWeight: 500, cursor: "pointer", textAlign: "center" }}>
               <div style={{ fontSize: 11, marginBottom: 2 }}>{level.name}</div>
               <div style={{ fontSize: 10, opacity: 0.7 }}>${level.cost.toFixed(2)}</div>
@@ -353,7 +361,7 @@ export default function Dashboard() {
                 <button onClick={() => openPreview(v.filename)} style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid #3b82f6", background: "transparent", color: "#3b82f6", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>▶ Watch</button>
                 <button onClick={() => triggerPipeline(v.filename)} disabled={loading || !!processingFile}
                   style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid #f59e0b", background: "transparent", color: "#f59e0b", fontSize: 13, fontWeight: 500, cursor: (loading || processingFile) ? "not-allowed" : "pointer", opacity: (loading || processingFile) ? 0.6 : 1 }}>
-                  🔄 Re-process
+                  🔄 Re-process [{robustness}]
                 </button>
               </div>
             </VideoRow>
