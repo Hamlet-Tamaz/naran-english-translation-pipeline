@@ -1,13 +1,51 @@
 import os
 import subprocess
 
+# Speaker color map for ASS subtitles
+SPEAKER_COLORS = {
+    "Naran": "&H00FFFFFF",        # White
+    "Kamran": "&H0080FFFF",       # Yellow-ish (distinct from Naran)
+    "Other Speaker": "&H00FF80FF", # Pink/magenta (distinct)
+    "Commenter": "&H0080FF80",    # Green
+    "Commenter1": "&H0080FF80",
+    "Commenter2": "&H00FFFF80",
+}
+
+def get_speaker_color(speaker: str) -> str:
+    """Get subtitle color for a speaker."""
+    canonical = speaker.strip()
+    if canonical in SPEAKER_COLORS:
+        return SPEAKER_COLORS[canonical]
+    if canonical.startswith("Commenter"):
+        return SPEAKER_COLORS.get("Commenter", "&H0080FF80")
+    if canonical.startswith("Speaker") and canonical[7:].isdigit():
+        colors = ["&H00FFFFFF", "&H0080FFFF", "&H00FF80FF", "&H0080FF80", "&H00FFFF80"]
+        return colors[int(canonical[7:]) % len(colors)]
+    return "&H00FFFFFF"  # Default white
+
+def get_speaker_label(speaker: str) -> str:
+    """Get display label for a speaker in subtitles."""
+    canonical = speaker.strip()
+    if canonical == "Naran":
+        return "Naran"
+    elif canonical == "Kamran":
+        return "Kamran"
+    elif canonical == "Other Speaker":
+        return "Other Speaker"
+    elif canonical.startswith("Commenter"):
+        return canonical
+    elif canonical.startswith("Speaker") and canonical[7:].isdigit():
+        return canonical
+    else:
+        return "Other Speaker"
+
 def generate_srt(segments, output_path):
     with open(output_path, "w", encoding="utf-8") as f:
         for i, seg in enumerate(segments, 1):
             start = seg["start"]
             end = seg["end"]
             text = seg.get("text", "").strip()
-            speaker = seg.get("speaker", "Naran")
+            speaker = get_speaker_label(seg.get("speaker", "Naran"))
             if not text:
                 continue
             f.write(f"{i}\n")
@@ -74,14 +112,17 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     events = []
     for seg in segments:
         text = seg.get("text", "").strip()
-        speaker = seg.get("speaker", "Naran")
+        speaker = get_speaker_label(seg.get("speaker", "Naran"))
+        speaker_color = get_speaker_color(seg.get("speaker", "Naran"))
         if not text:
             continue
         lines = wrap_text(text)
         ass_text = "\\N".join(lines)
         start = format_ass_time(seg["start"])
         end = format_ass_time(seg["end"])
-        events.append(f"Dialogue: 0,{start},{end},Default,,0,0,0,,({speaker})\\N{ass_text}")
+        # Speaker label in smaller text above, colored by speaker
+        speaker_label = f"{{\fs{int(font_size*0.75)}}}{{\c{speaker_color}}}({speaker}){{\c&H00FFFFFF}}{{\fs{font_size}}}\\N"
+        events.append(f"Dialogue: 0,{start},{end},Default,,0,0,0,,{speaker_label}{ass_text}")
 
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(header)

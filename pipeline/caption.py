@@ -14,20 +14,27 @@ def generate(translation, output_dir):
         speaker_list.append("• Naran Hangai — Host & historical analysis")
     if "Kamran" in speaker_counts:
         speaker_list.append("• Kamran — Recurring commenter whose claims are debunked")
-    if "Commenter" in speaker_counts:
-        speaker_list.append("• Other commenters — Additional historical claims quoted for context")
+    if "Other Speaker" in speaker_counts:
+        speaker_list.append("• Other Speaker — Quoted historical sources & references")
+    # Handle any CommenterN or SpeakerN labels
+    for sp in sorted(speaker_counts.keys()):
+        if sp.startswith("Commenter") and sp not in ("Commenter",):
+            speaker_list.append(f"• {sp} — Additional quoted source")
+        elif sp.startswith("Speaker") and sp[7:].isdigit() and sp not in ("Speaker1", "Speaker2"):
+            speaker_list.append(f"• {sp} — Detected speaker")
 
     if not speaker_list:
         speaker_list = ["• Naran Hangai — Host commentary"]
 
     speaker_section = "\n".join(speaker_list)
 
+    # Build flow showing speaker transitions
     flow_parts = []
     current = None
-    for seg in segments[:8]:
+    for seg in segments[:10]:  # Show first 10 segments for flow preview
         sp = seg.get("speaker", "Naran")
         label = sp
-        if sp != current or len(flow_parts) < 3:
+        if sp != current or len(flow_parts) < 4:
             flow_parts.append(f"{label}: {seg['text'][:70]}...")
             current = sp
     flow_text = "\n".join(flow_parts) if flow_parts else text[:300]

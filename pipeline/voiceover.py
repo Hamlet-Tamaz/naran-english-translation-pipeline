@@ -2,25 +2,36 @@ import os
 import subprocess
 from pydub import AudioSegment
 
+# Canonical voice map — each speaker gets ONE permanent voice
 VOICE_MAP = {
-    "Naran": "onyx",
-    "Kamran": "echo",
-    "Commenter": "fable",
-    "Commenter1": "fable",
-    "Commenter2": "nova",
-    "Other Speaker": "shimmer",
+    "Naran": "onyx",           # Deep male — host
+    "Kamran": "echo",          # Different male — commenter being debunked
+    "Other Speaker": "fable",  # Distinct voice for quoted sources
+    "Commenter": "nova",       # Fallback for generic commenters
+    "Commenter1": "nova",
+    "Commenter2": "shimmer",
 }
 
-GAP_MS = 150
+# Gap between speaker transitions (ms)
+GAP_MS = 200
 
 def get_voice_for_speaker(speaker: str) -> str:
-    if speaker in VOICE_MAP:
-        return VOICE_MAP[speaker]
-    if speaker.startswith("Commenter"):
-        num = speaker.replace("Commenter", "")
-        voices = ["fable", "nova", "shimmer"]
-        return voices[int(num) % len(voices)] if num.isdigit() else "fable"
-    return VOICE_MAP.get("Other Speaker", "shimmer")
+    """Return the canonical voice for a speaker. Never changes."""
+    canonical = speaker.strip()
+    if canonical in VOICE_MAP:
+        return VOICE_MAP[canonical]
+    # Handle numbered commenters
+    if canonical.startswith("Commenter"):
+        num = canonical.replace("Commenter", "")
+        voices = ["nova", "shimmer", "fable"]
+        return voices[int(num) % len(voices)] if num.isdigit() else "nova"
+    # Handle numbered speakers
+    if canonical.startswith("Speaker") and canonical[7:].isdigit():
+        num = int(canonical[7:])
+        voices = ["onyx", "echo", "fable", "nova", "shimmer"]
+        return voices[num % len(voices)]
+    # Default fallback
+    return VOICE_MAP.get("Other Speaker", "fable")
 
 def generate_for_speaker(text: str, speaker: str, output_path: str, api_key: str):
     from openai import OpenAI
@@ -55,6 +66,14 @@ def generate(translation: dict, output_dir: str) -> tuple:
     if not segments:
         raise RuntimeError("No segments to voice.")
 
+    # Log voice assignments for audit
+    voice_assignments = {}
+    for seg in segments:
+        sp = seg.get("speaker", "Naran")
+        voice = get_voice_for_speaker(sp)
+        voice_assignments[sp] = voice
+    print(f"  Voice assignments: {voice_assignments}")
+
     last_end = max(seg["end"] for seg in segments)
     total_duration_ms = int(last_end * 1000) + 5000
     base_audio = AudioSegment.silent(duration=total_duration_ms)
@@ -71,6 +90,7 @@ def generate(translation: dict, output_dir: str) -> tuple:
         segment_audio = AudioSegment.from_mp3(seg_path)
         position_ms = int(seg["start"] * 1000)
 
+        # Calculate allocated window (with gap before next segment)
         if i < len(segments) - 1:
             next_start_ms = int(segments[i + 1]["start"] * 1000)
             allocated_end_ms = next_start_ms - GAP_MS
@@ -79,6 +99,7 @@ def generate(translation: dict, output_dir: str) -> tuple:
 
         allocated_ms = allocated_end_ms - position_ms
 
+        # Trim or fade if segment is too long
         if len(segment_audio) > allocated_ms + 2000 and allocated_ms > 1000:
             segment_audio = segment_audio[:int(allocated_ms)]
             print(f"  [{speaker}] trimmed {len(segment_audio)/1000:.2f}s -> {allocated_ms/1000:.2f}s")
