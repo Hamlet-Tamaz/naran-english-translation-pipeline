@@ -27,12 +27,9 @@ const ROBUSTNESS_LEVELS = [
 ];
 
 export default function Dashboard() {
-  // Auth
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
   const [authError, setAuthError] = useState("");
-
-  // Core state
   const [videos, setVideos] = useState<QueueVideo[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -44,17 +41,19 @@ export default function Dashboard() {
   const [robustness, setRobustness] = useState("standard");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Preview
   const [previewVideo, setPreviewVideo] = useState<string | null>(null);
   const [previewFilename, setPreviewFilename] = useState<string>("");
   const [previewCaption, setPreviewCaption] = useState<string>("");
+  const [previewRussian, setPreviewRussian] = useState<string>("");
+  const [previewEnglish, setPreviewEnglish] = useState<string>("");
+  const [textTab, setTextTab] = useState<"caption" | "russian" | "english">("caption");
+  const [showOriginal, setShowOriginal] = useState<boolean>(false);
   const [previewVersions, setPreviewVersions] = useState<VersionInfo[]>([]);
   const [selectedVersion, setSelectedVersion] = useState<number>(0);
   const [videoTime, setVideoTime] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Auth check on mount
   useEffect(() => {
     const token = localStorage.getItem("naran_auth");
     if (token) setIsAuthenticated(true);
@@ -147,6 +146,8 @@ export default function Dashboard() {
 
   async function openPreview(filename: string) {
     setPreviewFilename(filename);
+    setShowOriginal(false);
+    setTextTab("caption");
     const versions = await fetchVersions(filename);
     setPreviewVersions(versions);
     const vNum = versions.length > 0 ? versions[versions.length - 1].number : 1;
@@ -157,10 +158,30 @@ export default function Dashboard() {
   async function loadVersionPreview(filename: string, vNum: number) {
     const videoId = filename.replace(".mp4", "");
     setPreviewVideo(`https://raw.githubusercontent.com/Hamlet-Tamaz/naran-english-translation-pipeline/main/processed/${videoId}/v${vNum}/final.mp4`);
+
     try {
       const res = await fetch(`https://raw.githubusercontent.com/Hamlet-Tamaz/naran-english-translation-pipeline/main/processed/${videoId}/v${vNum}/caption.txt`);
       setPreviewCaption(await res.text());
     } catch (e) { setPreviewCaption(""); }
+
+    try {
+      const res = await fetch(`https://raw.githubusercontent.com/Hamlet-Tamaz/naran-english-translation-pipeline/main/processed/${videoId}/v${vNum}/original_russian.txt`);
+      setPreviewRussian(await res.text());
+    } catch (e) { setPreviewRussian(""); }
+
+    try {
+      const res = await fetch(`https://raw.githubusercontent.com/Hamlet-Tamaz/naran-english-translation-pipeline/main/processed/${videoId}/v${vNum}/original_english.txt`);
+      const enText = await res.text();
+      if (enText) setPreviewEnglish(prev => prev ? prev + "\n\n[Original English segments:]\n" + enText : enText);
+    } catch (e) {}
+
+    try {
+      const res = await fetch(`https://raw.githubusercontent.com/Hamlet-Tamaz/naran-english-translation-pipeline/main/processed/${videoId}/v${vNum}/translation.json`);
+      const data = await res.json();
+      const fullText = data.full_text || (data.segments ? data.segments.map((s: any) => s.text).join(" ") : "");
+      setPreviewEnglish(fullText);
+    } catch (e) { setPreviewEnglish(""); }
+
     setVideoTime(0); setVideoDuration(0);
   }
 
@@ -219,31 +240,21 @@ export default function Dashboard() {
     return `${m}:${sec.toString().padStart(2, '0')}`;
   };
 
-  // LOGIN SCREEN
   if (!isAuthenticated) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0a0a0a" }}>
         <div style={{ width: 360, padding: 40, borderRadius: 16, border: "1px solid #27272a", background: "#18181b" }}>
           <h1 style={{ fontSize: 24, fontWeight: 600, color: "#fafafa", margin: "0 0 8px" }}>Naran Pipeline</h1>
           <p style={{ fontSize: 13, color: "#a1a1aa", margin: "0 0 24px" }}>Armenian content → English translation</p>
-          <input
-            type="password"
-            placeholder="Enter password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && login()}
-            style={{ width: "100%", padding: "12px 14px", borderRadius: 8, border: "1px solid #3f3f46", background: "#27272a", color: "#fafafa", fontSize: 14, marginBottom: 12, outline: "none" }}
-          />
+          <input type="password" placeholder="Enter password" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && login()}
+            style={{ width: "100%", padding: "12px 14px", borderRadius: 8, border: "1px solid #3f3f46", background: "#27272a", color: "#fafafa", fontSize: 14, marginBottom: 12, outline: "none" }} />
           {authError && <div style={{ color: "#ef4444", fontSize: 12, marginBottom: 12 }}>{authError}</div>}
-          <button onClick={login} style={{ width: "100%", padding: "12px", borderRadius: 8, border: "none", background: "#3b82f6", color: "#fff", fontSize: 14, fontWeight: 500, cursor: "pointer" }}>
-            Sign In
-          </button>
+          <button onClick={login} style={{ width: "100%", padding: "12px", borderRadius: 8, border: "none", background: "#3b82f6", color: "#fff", fontSize: 14, fontWeight: 500, cursor: "pointer" }}>Sign In</button>
         </div>
       </div>
     );
   }
 
-  // MAIN DASHBOARD
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 16px" }}>
       <header style={{ marginBottom: 32, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -251,27 +262,15 @@ export default function Dashboard() {
           <h1 style={{ fontSize: 28, fontWeight: 600, margin: 0, color: "#fafafa" }}>Naran Pipeline</h1>
           <p style={{ margin: "8px 0 0", color: "#a1a1aa", fontSize: 14 }}>Armenian content → English translation, voiceover & subtitles</p>
         </div>
-        <button onClick={() => { localStorage.removeItem("naran_auth"); setIsAuthenticated(false); }} style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid #3f3f46", background: "transparent", color: "#a1a1aa", fontSize: 12, cursor: "pointer" }}>
-          Sign Out
-        </button>
+        <button onClick={() => { localStorage.removeItem("naran_auth"); setIsAuthenticated(false); }} style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid #3f3f46", background: "transparent", color: "#a1a1aa", fontSize: 12, cursor: "pointer" }}>Sign Out</button>
       </header>
 
-      {/* Robustness Slider */}
       <div style={{ padding: "18px", borderRadius: 12, border: "1px solid #27272a", background: "rgba(255,255,255,0.02)", marginBottom: 24 }}>
         <div style={{ fontSize: 13, fontWeight: 500, color: "#d4d4d8", marginBottom: 12 }}>Translation Robustness</div>
         <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-          {ROBUSTNESS_LEVELS.map((level, i) => (
-            <button
-              key={level.key}
-              onClick={() => setRobustness(level.key)}
-              style={{
-                flex: 1, padding: "10px 8px", borderRadius: 8, border: "1px solid",
-                borderColor: robustness === level.key ? level.color : "#27272a",
-                background: robustness === level.key ? `${level.color}20` : "transparent",
-                color: robustness === level.key ? level.color : "#71717a",
-                fontSize: 12, fontWeight: 500, cursor: "pointer", textAlign: "center"
-              }}
-            >
+          {ROBUSTNESS_LEVELS.map((level) => (
+            <button key={level.key} onClick={() => setRobustness(level.key)}
+              style={{ flex: 1, padding: "10px 8px", borderRadius: 8, border: "1px solid", borderColor: robustness === level.key ? level.color : "#27272a", background: robustness === level.key ? `${level.color}20` : "transparent", color: robustness === level.key ? level.color : "#71717a", fontSize: 12, fontWeight: 500, cursor: "pointer", textAlign: "center" }}>
               <div style={{ fontSize: 11, marginBottom: 2 }}>{level.name}</div>
               <div style={{ fontSize: 10, opacity: 0.7 }}>${level.cost.toFixed(2)}</div>
             </button>
@@ -286,9 +285,7 @@ export default function Dashboard() {
       </div>
 
       {message && (
-        <div style={{ padding: "12px 16px", borderRadius: 8, marginBottom: 20, background: message.includes("Error") ? "rgba(239,68,68,0.15)" : message.includes("complete") ? "rgba(34,197,94,0.15)" : "rgba(59,130,246,0.15)", color: message.includes("Error") ? "#fca5a5" : message.includes("complete") ? "#86efac" : "#93c5fd", fontSize: 14 }}>
-          {message}
-        </div>
+        <div style={{ padding: "12px 16px", borderRadius: 8, marginBottom: 20, background: message.includes("Error") ? "rgba(239,68,68,0.15)" : message.includes("complete") ? "rgba(34,197,94,0.15)" : "rgba(59,130,246,0.15)", color: message.includes("Error") ? "#fca5a5" : message.includes("complete") ? "#86efac" : "#93c5fd", fontSize: 14 }}>{message}</div>
       )}
 
       {!checkingEnv && (
@@ -303,7 +300,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Upload */}
       <div onDrop={onDrop} onDragOver={onDragOver} onDragLeave={onDragLeave} onClick={() => fileInputRef.current?.click()}
         style={{ padding: "40px 24px", borderRadius: 12, border: `2px dashed ${isDragging ? "#3b82f6" : "#3f3f46"}`, background: isDragging ? "rgba(59,130,246,0.08)" : "rgba(255,255,255,0.02)", textAlign: "center", cursor: "pointer", transition: "all 0.2s ease", marginBottom: 32 }}>
         <input ref={fileInputRef} type="file" accept="video/*" onChange={e => e.target.files?.[0] && uploadFile(e.target.files[0])} style={{ display: "none" }} />
@@ -319,14 +315,12 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 32 }}>
         <StatCard label="Pending" value={pending.length} color="#f59e0b" />
         <StatCard label="Processing" value={videos.filter(v => v.status === "processing").length + (processingFile ? 1 : 0)} color="#3b82f6" />
         <StatCard label="Completed" value={completed.length} color="#22c55e" />
       </div>
 
-      {/* Pending */}
       <Section title="Pending Approval" count={pending.length}>
         {pending.length === 0 ? <EmptyState text="No videos waiting. Upload one above." /> : (
           pending.map(v => (
@@ -344,7 +338,6 @@ export default function Dashboard() {
         )}
       </Section>
 
-      {/* Completed */}
       <Section title="Completed" count={completed.length}>
         {completed.length === 0 ? <EmptyState text="No processed videos yet." /> : (
           completed.map(v => (
@@ -361,20 +354,19 @@ export default function Dashboard() {
         )}
       </Section>
 
-      {/* Preview Modal */}
       {previewVideo && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.9)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 24, overflow: "auto" }} onClick={() => setPreviewVideo(null)}>
-          <div style={{ maxWidth: 800, width: "100%", background: "#18181b", borderRadius: 12, overflow: "hidden", border: "1px solid #27272a" }} onClick={e => e.stopPropagation()}>
-            <div style={{ padding: "16px 20px", borderBottom: "1px solid #27272a", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ maxWidth: 900, width: "100%", maxHeight: "90vh", display: "flex", flexDirection: "column", background: "#18181b", borderRadius: 12, overflow: "hidden", border: "1px solid #27272a" }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding: "16px 20px", borderBottom: "1px solid #27272a", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
               <span style={{ fontSize: 15, fontWeight: 500, color: "#fafafa" }}>Preview</span>
               <button onClick={() => setPreviewVideo(null)} style={{ background: "none", border: "none", color: "#a1a1aa", fontSize: 20, cursor: "pointer" }}>×</button>
             </div>
 
             {previewVersions.length > 1 && (
-              <div style={{ padding: "12px 20px", borderBottom: "1px solid #27272a", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <div style={{ padding: "12px 20px", borderBottom: "1px solid #27272a", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", flexShrink: 0 }}>
                 <span style={{ fontSize: 12, color: "#a1a1aa" }}>Version:</span>
                 {previewVersions.map(v => (
-                  <button key={v.number} onClick={() => { setSelectedVersion(v.number); loadVersionPreview(previewVideo?.split("/processed/")[1]?.split("/v")[0] + ".mp4" || "", v.number); }}
+                  <button key={v.number} onClick={() => { setSelectedVersion(v.number); loadVersionPreview(previewFilename, v.number); }}
                     style={{ padding: "4px 10px", borderRadius: 4, border: "1px solid", borderColor: selectedVersion === v.number ? "#3b82f6" : "#3f3f46", background: selectedVersion === v.number ? "rgba(59,130,246,0.2)" : "transparent", color: selectedVersion === v.number ? "#3b82f6" : "#a1a1aa", fontSize: 12, cursor: "pointer" }}>
                     v{v.number} ({v.robustness})
                   </button>
@@ -382,10 +374,24 @@ export default function Dashboard() {
               </div>
             )}
 
-            <video ref={videoRef} controls style={{ width: "100%", display: "block" }} src={previewVideo} onTimeUpdate={handleTimeUpdate} onLoadedMetadata={handleTimeUpdate} />
+            <video ref={videoRef} controls style={{ width: "100%", display: "block", maxHeight: "50vh" }} src={previewVideo} onTimeUpdate={handleTimeUpdate} onLoadedMetadata={handleTimeUpdate} />
+
+            <div style={{ padding: "8px 20px", borderBottom: "1px solid #27272a", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+              <button onClick={() => setShowOriginal(!showOriginal)} style={{ padding: "6px 12px", borderRadius: 4, border: "1px solid #3f3f46", background: showOriginal ? "rgba(59,130,246,0.2)" : "transparent", color: showOriginal ? "#3b82f6" : "#a1a1aa", fontSize: 12, cursor: "pointer" }}>
+                {showOriginal ? "Hide Original" : "Show Original Video"}
+              </button>
+              <span style={{ fontSize: 11, color: "#71717a" }}>Compare with source</span>
+            </div>
+
+            {showOriginal && (
+              <div style={{ padding: "12px 20px", borderBottom: "1px solid #27272a", background: "#0a0a0a", flexShrink: 0 }}>
+                <div style={{ fontSize: 11, color: "#a1a1aa", marginBottom: 8 }}>Original Source Video</div>
+                <video controls style={{ width: "100%", display: "block", maxHeight: 300 }} src={`https://pub-9636f37ce40b48d4b83af40ce7c35e71.r2.dev/${previewFilename}`} />
+              </div>
+            )}
 
             {videoDuration > 0 && (
-              <div style={{ padding: "8px 20px", borderBottom: "1px solid #27272a" }}>
+              <div style={{ padding: "8px 20px", borderBottom: "1px solid #27272a", flexShrink: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <span style={{ fontSize: 11, color: "#a1a1aa", minWidth: 36 }}>{formatTime(videoTime)}</span>
                   <input type="range" min={0} max={videoDuration} step={0.1} value={videoTime} onChange={handleScrub} style={{ flex: 1, accentColor: "#3b82f6" }} />
@@ -394,12 +400,26 @@ export default function Dashboard() {
               </div>
             )}
 
-            <div style={{ padding: "16px 20px" }}>
-              <div style={{ fontSize: 12, color: "#a1a1aa", marginBottom: 8 }}>Caption</div>
-              <pre style={{ margin: 0, fontSize: 12, color: "#d4d4d8", whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 150, overflow: "auto" }}>{previewCaption}</pre>
-              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            <div style={{ padding: "16px 20px", overflow: "auto", flex: 1, minHeight: 0 }}>
+              <div style={{ display: "flex", gap: 12, marginBottom: 12, borderBottom: "1px solid #27272a", paddingBottom: 8, flexShrink: 0 }}>
+                <button onClick={() => setTextTab("caption")} style={{ background: "none", border: "none", color: textTab === "caption" ? "#3b82f6" : "#71717a", fontSize: 12, fontWeight: 500, cursor: "pointer", borderBottom: textTab === "caption" ? "2px solid #3b82f6" : "2px solid transparent", paddingBottom: 4 }}>Caption</button>
+                <button onClick={() => setTextTab("russian")} style={{ background: "none", border: "none", color: textTab === "russian" ? "#3b82f6" : "#71717a", fontSize: 12, fontWeight: 500, cursor: "pointer", borderBottom: textTab === "russian" ? "2px solid #3b82f6" : "2px solid transparent", paddingBottom: 4 }}>Russian Original</button>
+                <button onClick={() => setTextTab("english")} style={{ background: "none", border: "none", color: textTab === "english" ? "#3b82f6" : "#71717a", fontSize: 12, fontWeight: 500, cursor: "pointer", borderBottom: textTab === "english" ? "2px solid #3b82f6" : "2px solid transparent", paddingBottom: 4 }}>English Translation</button>
+              </div>
+
+              {textTab === "caption" && (
+                <pre style={{ margin: 0, fontSize: 12, color: "#d4d4d8", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{previewCaption}</pre>
+              )}
+              {textTab === "russian" && (
+                <pre style={{ margin: 0, fontSize: 12, color: "#d4d4d8", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{previewRussian || "Russian original not available for this version."}</pre>
+              )}
+              {textTab === "english" && (
+                <pre style={{ margin: 0, fontSize: 12, color: "#d4d4d8", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{previewEnglish || "English translation not available."}</pre>
+              )}
+
+              <div style={{ display: "flex", gap: 8, marginTop: 12, flexShrink: 0 }}>
                 <a href={previewVideo} download style={{ padding: "8px 16px", borderRadius: 6, border: "none", background: "#3b82f6", color: "#fff", fontSize: 13, fontWeight: 500, textDecoration: "none", display: "inline-block" }}>⬇ Download Video</a>
-                <button onClick={() => { navigator.clipboard.writeText(previewCaption); setMessage("Caption copied!"); }} style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid #3f3f46", background: "transparent", color: "#a1a1aa", fontSize: 13, cursor: "pointer" }}>📋 Copy Caption</button>
+                <button onClick={() => { const text = textTab === "russian" ? previewRussian : textTab === "english" ? previewEnglish : previewCaption; navigator.clipboard.writeText(text); setMessage("Text copied!"); }} style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid #3f3f46", background: "transparent", color: "#a1a1aa", fontSize: 13, cursor: "pointer" }}>📋 Copy {textTab === "caption" ? "Caption" : textTab === "russian" ? "Russian" : "English"}</button>
               </div>
             </div>
           </div>

@@ -6,14 +6,26 @@ VOICE_MAP = {
     "Naran": "onyx",
     "Kamran": "echo",
     "Commenter": "fable",
+    "Commenter1": "fable",
+    "Commenter2": "nova",
+    "Other Speaker": "shimmer",
 }
 
-GAP_MS = 300  # 0.3s gap between speaker segments
+GAP_MS = 300
+
+def get_voice_for_speaker(speaker: str) -> str:
+    if speaker in VOICE_MAP:
+        return VOICE_MAP[speaker]
+    if speaker.startswith("Commenter"):
+        num = speaker.replace("Commenter", "")
+        voices = ["fable", "nova", "shimmer"]
+        return voices[int(num) % len(voices)] if num.isdigit() else "fable"
+    return VOICE_MAP.get("Other Speaker", "shimmer")
 
 def generate_for_speaker(text: str, speaker: str, output_path: str, api_key: str):
     from openai import OpenAI
     client = OpenAI(api_key=api_key)
-    voice = VOICE_MAP.get(speaker, "onyx")
+    voice = get_voice_for_speaker(speaker)
     response = client.audio.speech.create(
         model="tts-1",
         voice=voice,
@@ -43,7 +55,6 @@ def generate(translation: dict, output_dir: str) -> tuple:
     if not segments:
         raise RuntimeError("No segments to voice.")
 
-    # Calculate total duration with gaps
     last_end = max(seg["end"] for seg in segments)
     total_duration_ms = int(last_end * 1000) + 5000
     base_audio = AudioSegment.silent(duration=total_duration_ms)
@@ -60,15 +71,13 @@ def generate(translation: dict, output_dir: str) -> tuple:
         segment_audio = AudioSegment.from_mp3(seg_path)
         position_ms = int(seg["start"] * 1000)
 
-        # Calculate end of allocated window (next segment start - gap)
         if i < len(segments) - 1:
             next_start_ms = int(segments[i + 1]["start"] * 1000)
             allocated_end_ms = next_start_ms - GAP_MS
             allocated_ms = allocated_end_ms - position_ms
         else:
-            allocated_ms = 999999  # Last segment
+            allocated_ms = 999999
 
-        # Trim if TTS exceeds allocated window minus gap
         if len(segment_audio) > allocated_ms and allocated_ms > 800:
             segment_audio = segment_audio[:int(allocated_ms)]
             print(f"  [{speaker}] trimmed to {len(segment_audio)/1000:.2f}s (gap: {GAP_MS}ms)")
