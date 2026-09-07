@@ -11,7 +11,7 @@ VOICE_MAP = {
     "Other Speaker": "shimmer",
 }
 
-GAP_MS = 300
+GAP_MS = 150
 
 def get_voice_for_speaker(speaker: str) -> str:
     if speaker in VOICE_MAP:
@@ -74,13 +74,19 @@ def generate(translation: dict, output_dir: str) -> tuple:
         if i < len(segments) - 1:
             next_start_ms = int(segments[i + 1]["start"] * 1000)
             allocated_end_ms = next_start_ms - GAP_MS
-            allocated_ms = allocated_end_ms - position_ms
         else:
-            allocated_ms = 999999
+            allocated_end_ms = total_duration_ms
 
-        if len(segment_audio) > allocated_ms and allocated_ms > 800:
+        allocated_ms = allocated_end_ms - position_ms
+
+        if len(segment_audio) > allocated_ms + 2000 and allocated_ms > 1000:
             segment_audio = segment_audio[:int(allocated_ms)]
-            print(f"  [{speaker}] trimmed to {len(segment_audio)/1000:.2f}s (gap: {GAP_MS}ms)")
+            print(f"  [{speaker}] trimmed {len(segment_audio)/1000:.2f}s -> {allocated_ms/1000:.2f}s")
+        elif len(segment_audio) > allocated_ms:
+            fade_ms = min(300, len(segment_audio) - allocated_ms)
+            if fade_ms > 50:
+                segment_audio = segment_audio[:allocated_ms + fade_ms].fade_out(fade_ms)
+                print(f"  [{speaker}] faded out last {fade_ms}ms")
 
         base_audio = base_audio.overlay(segment_audio, position=position_ms)
         os.remove(seg_path)
@@ -88,5 +94,5 @@ def generate(translation: dict, output_dir: str) -> tuple:
 
     base_audio.export(path, format="mp3", bitrate="192k")
     total_duration = get_audio_duration(path)
-    print(f"  Voiceover: {total_duration:.2f}s, {GAP_MS}ms gaps between speakers")
+    print(f"  Voiceover: {total_duration:.2f}s, {GAP_MS}ms gaps")
     return path, total_duration

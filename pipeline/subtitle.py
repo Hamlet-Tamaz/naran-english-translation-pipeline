@@ -1,6 +1,5 @@
 import os
 import subprocess
-import re
 
 def generate_srt(segments, output_path):
     with open(output_path, "w", encoding="utf-8") as f:
@@ -11,9 +10,9 @@ def generate_srt(segments, output_path):
             speaker = seg.get("speaker", "Naran")
             if not text:
                 continue
-            f.write(f"{i}\\n")
-            f.write(f"{format_time(start)} --> {format_time(end)}\\n")
-            f.write(f"({speaker})\\n{text}\\n\\n")
+            f.write(f"{i}\n")
+            f.write(f"{format_time(start)} --> {format_time(end)}\n")
+            f.write(f"({speaker}) {text}\n\n")
 
 def format_time(seconds):
     hours = int(seconds // 3600)
@@ -22,7 +21,7 @@ def format_time(seconds):
     millis = int((seconds % 1) * 1000)
     return f"{hours:02d}:{minutes:02d}:{secs:02d},{millis:03d}"
 
-def wrap_text(text, max_chars=32):
+def wrap_text(text, max_chars=40):
     words = text.split()
     lines = []
     current_line = ""
@@ -54,9 +53,9 @@ def generate_ass(segments, output_path, video_path):
         video_width = 1080
         video_height = 1920
 
-    font_size = max(16, int(video_height * 0.025))
-    margin_lr = int(video_width * 0.05)
-    margin_v = int(video_height * 0.10)
+    font_size = max(18, int(video_height * 0.028))
+    margin_lr = int(video_width * 0.06)
+    margin_v = int(video_height * 0.08)
 
     header = f"""[Script Info]
 Title: Naran English Subtitles
@@ -67,10 +66,6 @@ PlayResY: {video_height}
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
 Style: Default,DejaVu Sans,{font_size},&H00FFFFFF,&H00808080,&H00000000,&H90000000,-1,0,0,0,100,100,0,0,3,2,0,2,{margin_lr},{margin_lr},{margin_v},1
-Style: Naran,DejaVu Sans,{font_size},&H00FFFFFF,&H00808080,&H00000000,&H90000000,-1,0,0,0,100,100,0,0,3,2,0,2,{margin_lr},{margin_lr},{margin_v},1
-Style: Kamran,DejaVu Sans,{font_size},&H00FFFF80,&H00808080,&H00000000,&H90000000,-1,0,0,0,100,100,0,0,3,2,0,2,{margin_lr},{margin_lr},{margin_v},1
-Style: Commenter,DejaVu Sans,{font_size},&H0080FFFF,&H00808080,&H00000000,&H90000000,-1,0,0,0,100,100,0,0,3,2,0,2,{margin_lr},{margin_lr},{margin_v},1
-Style: Other,DejaVu Sans,{font_size},&H00FF8080,&H00808080,&H00000000,&H90000000,-1,0,0,0,100,100,0,0,3,2,0,2,{margin_lr},{margin_lr},{margin_v},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -82,16 +77,16 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         speaker = seg.get("speaker", "Naran")
         if not text:
             continue
-        style = speaker if speaker in {"Naran", "Kamran", "Commenter", "Commenter1", "Commenter2", "Other Speaker"} else "Naran"
         lines = wrap_text(text)
         ass_text = "\\N".join(lines)
         start = format_ass_time(seg["start"])
         end = format_ass_time(seg["end"])
-        events.append(f"Dialogue: 0,{start},{end},{style},,0,0,0,,{ass_text}")
+        events.append(f"Dialogue: 0,{start},{end},Default,,0,0,0,,({speaker})\\N{ass_text}")
 
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(header)
-        f.write("\\n".join(events))
+        for event in events:
+            f.write(event + "\n")
 
 def format_ass_time(seconds):
     hours = int(seconds // 3600)
@@ -101,31 +96,35 @@ def format_ass_time(seconds):
     return f"{hours}:{minutes:02d}:{secs:02d}.{centis:02d}"
 
 def burn(video_path, translation, voiceover_path, voiceover_duration, output_dir):
-    """Burn subtitles into video and mix with voiceover audio."""
     segments = translation.get("segments", [])
-
-    # Generate subtitle files
     srt_path = os.path.join(output_dir, "subtitles.srt")
     ass_path = os.path.join(output_dir, "subtitles.ass")
     generate_srt(segments, srt_path)
     generate_ass(segments, ass_path, video_path)
-    print(f"  Subtitles: {len(segments)} segments -> {srt_path}, {ass_path}")
 
-    # Output paths
     final_path = os.path.join(output_dir, "final.mp4")
-    temp_video = os.path.join(output_dir, "temp_video.mp4")
+    temp_video = os.path.join(output_dir, "temp_subbed.mp4")
 
-    # Step 1: Burn subtitles into video using ASS
-    vf = f"subtitles={ass_path}:force_style='FontName=DejaVu Sans'"
+    # Step 1: Burn subtitles — try ass filter first, fallback to SRT
     cmd1 = [
         "ffmpeg", "-y", "-i", video_path,
-        "-vf", vf,
-        "-c:a", "copy",
+        "-vf", f"ass={ass_path}",
+        "-an",
         temp_video
     ]
-    subprocess.run(cmd1, check=True, capture_output=True)
+    result1 = subprocess.run(cmd1, capture_output=True, text=True)
+    if result1.returncode != 0:
+        print(f"  [WARN] ASS filter failed, using SRT fallback...")
+        print(f"  Error: {result1.stderr[:300]}")
+        cmd1_fb = [
+            "ffmpeg", "-y", "-i", video_path,
+            "-vf", f"subtitles={srt_path}:force_style='FontName=DejaVu Sans,FontSize=24,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,Outline=2,Shadow=0,Alignment=2,MarginV=80'",
+            "-an",
+            temp_video
+        ]
+        subprocess.run(cmd1_fb, check=True, capture_output=True)
 
-    # Step 2: Mix voiceover audio (replace original audio)
+    # Step 2: Mix voiceover audio
     cmd2 = [
         "ffmpeg", "-y",
         "-i", temp_video,
@@ -139,7 +138,6 @@ def burn(video_path, translation, voiceover_path, voiceover_duration, output_dir
     ]
     subprocess.run(cmd2, check=True, capture_output=True)
 
-    # Cleanup temp
     if os.path.exists(temp_video):
         os.remove(temp_video)
 
