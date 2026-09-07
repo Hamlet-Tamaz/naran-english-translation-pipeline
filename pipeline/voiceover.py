@@ -14,6 +14,11 @@ VOICE_MAP = {
 
 # Gap between speaker transitions (ms)
 GAP_MS = 200
+# Minimum gap we ever allow when a stretched segment needs the room (ms)
+MIN_GAP_MS = 50
+# Maximum speed-up factor — beyond this we shrink the gap / allow slight
+# overlap, but NEVER cut spoken audio. Every spoken portion must be complete.
+MAX_SPEEDUP = 1.8
 
 def get_voice_for_speaker(speaker: str) -> str:
     """Return the canonical voice for a speaker. Never changes."""
@@ -56,6 +61,42 @@ def get_audio_duration(audio_path: str) -> float:
     result = subprocess.run(cmd, capture_output=True, text=True, check=True)
     return float(result.stdout.strip())
 
+def build_atempo_chain(speed: float) -> str:
+    """Build an ffmpeg atempo filter chain. Each atempo accepts 0.5-2.0,
+    so chain multiple filters for larger factors."""
+    filters = []
+    s = speed
+    while s > 2.0:
+        filters.append("atempo=2.0")
+        s /= 2.0
+    filters.append(f"atempo={s:.4f}")
+    return ",".join(filters)
+
+def stretch_to_fit(raw_path: str, target_ms: int, output_path: str) -> int:
+    """Time-stretch audio (pitch-preserving, ffmpeg atempo) so it fits
+    within target_ms WITHOUT cutting anything. Returns new duration in ms."""
+    audio = AudioSegment.from_mp3(raw_path)
+    dur_ms = len(audio)
+    if dur_ms <= target_ms or target_ms <= 0:
+        if raw_path != output_path:
+            audio.export(output_path, format="mp3", bitrate="192k")
+        return dur_ms
+
+    speed = dur_ms / target_ms
+    if speed > MAX_SPEEDUP:
+        speed = MAX_SPEEDUP
+
+    chain = build_atempo_chain(speed)
+    cmd = [
+        "ffmpeg", "-y", "-i", raw_path,
+        "-filter:a", chain,
+        "-b:a", "192k",
+        output_path
+    ]
+    subprocess.run(cmd, check=True, capture_output=True)
+    new_dur_ms = len(AudioSegment.from_mp3(output_path))
+    return new_dur_ms
+
 def generate(translation: dict, output_dir: str) -> tuple:
     path = os.path.join(output_dir, "voiceover.mp3")
     api_key = os.environ.get("OPENAI_API_KEY")
@@ -84,36 +125,56 @@ def generate(translation: dict, output_dir: str) -> tuple:
         if not text:
             continue
 
+        raw_path = os.path.join(output_dir, f"voice_raw_{i:03d}.mp3")
         seg_path = os.path.join(output_dir, f"voice_seg_{i:03d}.mp3")
-        generate_for_speaker(text, speaker, seg_path, api_key)
+        generate_for_speaker(text, speaker, raw_path, api_key)
 
-        segment_audio = AudioSegment.from_mp3(seg_path)
+        raw_audio = AudioSegment.from_mp3(raw_path)
+        raw_ms = len(raw_audio)
         position_ms = int(seg["start"] * 1000)
 
         # Calculate allocated window (with gap before next segment)
         if i < len(segments) - 1:
             next_start_ms = int(segments[i + 1]["start"] * 1000)
             allocated_end_ms = next_start_ms - GAP_MS
+            hard_end_ms = next_start_ms  # absolute boundary (0 gap)
         else:
             allocated_end_ms = total_duration_ms
+            hard_end_ms = total_duration_ms
 
         allocated_ms = allocated_end_ms - position_ms
 
-        # Trim or fade if segment is too long
-        if len(segment_audio) > allocated_ms + 2000 and allocated_ms > 1000:
-            segment_audio = segment_audio[:int(allocated_ms)]
-            print(f"  [{speaker}] trimmed {len(segment_audio)/1000:.2f}s -> {allocated_ms/1000:.2f}s")
-        elif len(segment_audio) > allocated_ms:
-            fade_ms = min(300, len(segment_audio) - allocated_ms)
-            if fade_ms > 50:
-                segment_audio = segment_audio[:allocated_ms + fade_ms].fade_out(fade_ms)
-                print(f"  [{speaker}] faded out last {fade_ms}ms")
+        if raw_ms <= allocated_ms:
+            # Fits naturally — use as-is
+            final_audio = raw_audio
+            final_ms = raw_ms
+        else:
+            # Too long — quicken the speech to fit. NEVER cut.
+            needed_speed = raw_ms / allocated_ms if allocated_ms > 0 else MAX_SPEEDUP + 1
+            if needed_speed <= MAX_SPEEDUP:
+                final_ms = stretch_to_fit(raw_path, allocated_ms, seg_path)
+                print(f"  [{speaker}] quickened {needed_speed:.2f}x ({raw_ms/1000:.2f}s -> {final_ms/1000:.2f}s)")
+            else:
+                # Even max speedup won't fit in the window with a full gap.
+                # Priority: complete speech > gap. Shrink gap, then allow
+                # slight overlap as a last resort — but never cut audio.
+                min_gap_end_ms = hard_end_ms - MIN_GAP_MS
+                target_ms = max(min_gap_end_ms - position_ms, 500)
+                final_ms = stretch_to_fit(raw_path, target_ms, seg_path)
+                if position_ms + final_ms > hard_end_ms:
+                    print(f"  [{speaker}] WARN: speech complete but overlaps next segment by {(position_ms + final_ms - hard_end_ms)/1000:.2f}s")
+                else:
+                    print(f"  [{speaker}] quickened {MAX_SPEEDUP:.2f}x + gap shrunk ({raw_ms/1000:.2f}s -> {final_ms/1000:.2f}s)")
+            final_audio = AudioSegment.from_mp3(seg_path)
 
-        base_audio = base_audio.overlay(segment_audio, position=position_ms)
-        os.remove(seg_path)
-        print(f"  [{speaker}] {text[:45]}... @ {seg['start']:.1f}s ({len(segment_audio)/1000:.2f}s)")
+        base_audio = base_audio.overlay(final_audio, position=position_ms)
+        if os.path.exists(raw_path):
+            os.remove(raw_path)
+        if os.path.exists(seg_path):
+            os.remove(seg_path)
+        print(f"  [{speaker}] {text[:45]}... @ {seg['start']:.1f}s ({final_ms/1000:.2f}s)")
 
     base_audio.export(path, format="mp3", bitrate="192k")
     total_duration = get_audio_duration(path)
-    print(f"  Voiceover: {total_duration:.2f}s, {GAP_MS}ms gaps")
+    print(f"  Voiceover: {total_duration:.2f}s, {GAP_MS}ms gaps (speech time-stretched, never cut)")
     return path, total_duration
