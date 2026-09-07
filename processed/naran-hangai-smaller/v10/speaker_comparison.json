@@ -1,0 +1,54 @@
+{
+  "gpt4o": {
+    "method": "GPT-4o text analysis",
+    "speakers_found": [
+      "Naran"
+    ],
+    "segment_count": 23,
+    "cost": "~$0.05 per video",
+    "pros": [
+      "Understands context",
+      "Knows Naran vs Kamran",
+      "Handles quoted text"
+    ],
+    "cons": [
+      "Misses acoustic cues",
+      "May miss 3rd speaker if text is ambiguous"
+    ]
+  },
+  "pyannote": {
+    "method": "pyannote.audio (acoustic)",
+    "speakers_found": [],
+    "segment_count": 0,
+    "cost": "$0 (local, requires HF_TOKEN)",
+    "pros": [
+      "Detects actual voice changes",
+      "No text ambiguity",
+      "Finds all acoustic speakers"
+    ],
+    "cons": [
+      "Requires HF_TOKEN",
+      "Heavy model (~1.2GB)",
+      "Cannot distinguish same-voice quotes"
+    ]
+  },
+  "pause_heuristic": {
+    "method": "Pause-based heuristic",
+    "speakers_found": [
+      "Speaker1"
+    ],
+    "segment_count": 23,
+    "cost": "$0",
+    "pros": [
+      "Instant, no API",
+      "Detects natural pauses",
+      "Lightweight"
+    ],
+    "cons": [
+      "False positives on breaths",
+      "Misses rapid speaker switches",
+      "No semantic understanding"
+    ]
+  },
+  "recommendation": "GPT-4o primary for Naran/Kamran context. pyannote.audio as validation when HF_TOKEN available."
+}
