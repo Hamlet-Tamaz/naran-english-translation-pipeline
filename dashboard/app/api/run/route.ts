@@ -3,6 +3,43 @@ import { NextRequest, NextResponse } from "next/server";
 // GET-triggerable pipeline runner — same logic as /api/trigger but callable
 // via GET (for environments that can only fetch URLs).
 // Usage: /api/run?key=<dashboard password>&filename=<file>&robustness=<level>
+//
+// SAFETY: refuses to dispatch while another run is active or was triggered
+// less than 2 minutes ago. Parallel runs share one OpenAI API key and one
+// git branch — they collide and fail (this happened on 2026-09-07 when 9
+// dispatches fired within 20 seconds; only the first succeeded).
+
+const REPO = "Hamlet-Tamaz/naran-english-translation-pipeline";
+const WORKFLOW = "process-video.yml";
+const MIN_SPACING_MS = 2 * 60 * 1000;
+
+async function guardAgainstParallelRuns(token: string): Promise<string | null> {
+  const headers = {
+    Authorization: `token ${token}`,
+    Accept: "application/vnd.github.v3+json",
+  };
+  const res = await fetch(
+    `https://api.github.com/repos/${REPO}/actions/workflows/${WORKFLOW}/runs?per_page=5`,
+    { headers, cache: "no-store" }
+  );
+  if (!res.ok) return null; // can't check — fail open
+  const runs = (await res.json()).workflow_runs || [];
+  const active = runs.find((r: any) =>
+    ["queued", "in_progress", "waiting", "requested", "pending"].includes(r.status)
+  );
+  if (active) {
+    return `A pipeline run is already ${String(active.status).replace("_", " ")} — wait for it to finish before triggering another.`;
+  }
+  if (runs.length) {
+    const lastStart = new Date(runs[0].created_at).getTime();
+    const agoSec = Math.round((Date.now() - lastStart) / 1000);
+    if (Date.now() - lastStart < MIN_SPACING_MS) {
+      return `A run was triggered ${agoSec}s ago — to avoid collisions, wait at least 2 minutes between runs.`;
+    }
+  }
+  return null;
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const key = searchParams.get("key");
@@ -21,8 +58,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ message: "GITHUB_TOKEN not configured" }, { status: 500 });
   }
 
-  const repo = "Hamlet-Tamaz/naran-english-translation-pipeline";
-  const url = `https://api.github.com/repos/${repo}/actions/workflows/process-video.yml/dispatches`;
+  const blocked = await guardAgainstParallelRuns(token);
+  if (blocked) {
+    return NextResponse.json({ message: blocked }, { status: 409 });
+  }
+
+  const url = `https://api.github.com/repos/${REPO}/actions/workflows/${WORKFLOW}/dispatches`;
 
   const response = await fetch(url, {
     method: "POST",
@@ -38,7 +79,7 @@ export async function GET(req: NextRequest) {
   });
 
   if (response.status === 204) {
-    return NextResponse.json({ message: `Pipeline triggered: ${filename} [${robustness}]` });
+    return NextResponse.json({ message: `Pipeline triggered: ${filename} [${robustness}] — one run at a time.` });
   }
   const data = await response.json().catch(() => ({}));
   return NextResponse.json({ message: data.message || "Trigger failed" }, { status: response.status });
