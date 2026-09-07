@@ -131,7 +131,7 @@ export default function Dashboard() {
     } catch (e) { return []; }
   }
 
-  async function triggerPipeline(filename: string) {
+  async function triggerPipeline(filename: string, confirmed = false) {
     if (triggerLock.current) return; // hard guard against double-fire
     triggerLock.current = true;
     setProcessingFile(filename);
@@ -140,9 +140,25 @@ export default function Dashboard() {
       const res = await fetch("/api/trigger", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filename, robustness }),
+        body: JSON.stringify({ filename, robustness, confirm: confirmed }),
       });
       const data = await res.json();
+      if (res.status === 409) {
+        // Exact same video + quality already running — hard block
+        setMessage(data.message || "That exact run is already in progress.");
+        setProcessingFile(null);
+        return;
+      }
+      if (data.requires_confirmation && !confirmed) {
+        // Nothing changed since last run of this combo — ask before rerunning
+        if (window.confirm(data.warning || "Nothing changed since the last run. Reprocess anyway?")) {
+          triggerLock.current = false;
+          return triggerPipeline(filename, true);
+        }
+        setMessage("Cancelled — nothing has changed since the last run of this video at this quality.");
+        setProcessingFile(null);
+        return;
+      }
       setMessage(data.message || "Pipeline triggered!");
       if (!res.ok) setProcessingFile(null);
     } catch (e) {
