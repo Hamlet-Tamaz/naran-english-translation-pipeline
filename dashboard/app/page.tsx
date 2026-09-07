@@ -47,7 +47,7 @@ export default function Dashboard() {
   const [previewCaption, setPreviewCaption] = useState<string>("");
   const [previewRussian, setPreviewRussian] = useState<string>("");
   const [previewEnglish, setPreviewEnglish] = useState<string>("");
-  const [textTab, setTextTab] = useState<"caption" | "russian" | "english">("caption");
+  const [textTab, setTextTab] = useState<"caption" | "russian" | "english" | "speakers">("caption");
   const [showOriginal, setShowOriginal] = useState<boolean>(false);
   const [previewVersions, setPreviewVersions] = useState<VersionInfo[]>([]);
   const [selectedVersion, setSelectedVersion] = useState<number>(0);
@@ -144,8 +144,8 @@ export default function Dashboard() {
       });
       const data = await res.json();
       if (res.status === 409) {
-        // Exact same video + quality already running — hard block
-        setMessage(data.message || "That exact run is already in progress.");
+        // Same video already running at any quality — hard block
+        setMessage(data.message || "That video is already being processed.");
         setProcessingFile(null);
         return;
       }
@@ -463,6 +463,7 @@ export default function Dashboard() {
                 <button onClick={() => setTextTab("caption")} style={{ background: "none", border: "none", color: textTab === "caption" ? "#3b82f6" : "#71717a", fontSize: 12, fontWeight: 500, cursor: "pointer", borderBottom: textTab === "caption" ? "2px solid #3b82f6" : "2px solid transparent", paddingBottom: 4 }}>Caption</button>
                 <button onClick={() => setTextTab("russian")} style={{ background: "none", border: "none", color: textTab === "russian" ? "#3b82f6" : "#71717a", fontSize: 12, fontWeight: 500, cursor: "pointer", borderBottom: textTab === "russian" ? "2px solid #3b82f6" : "2px solid transparent", paddingBottom: 4 }}>Russian Original</button>
                 <button onClick={() => setTextTab("english")} style={{ background: "none", border: "none", color: textTab === "english" ? "#3b82f6" : "#71717a", fontSize: 12, fontWeight: 500, cursor: "pointer", borderBottom: textTab === "english" ? "2px solid #3b82f6" : "2px solid transparent", paddingBottom: 4 }}>English Translation</button>
+                <button onClick={() => setTextTab("speakers")} style={{ background: "none", border: "none", color: textTab === "speakers" ? "#3b82f6" : "#71717a", fontSize: 12, fontWeight: 500, cursor: "pointer", borderBottom: textTab === "speakers" ? "2px solid #3b82f6" : "2px solid transparent", paddingBottom: 4 }}>🎙 Speakers</button>
               </div>
 
               <div style={{ minHeight: 100 }}>
@@ -480,6 +481,9 @@ export default function Dashboard() {
                     <div style={{ fontSize: 11, color: "#71717a", marginBottom: 8 }}>Full English translation with speaker labels:</div>
                     <pre style={{ margin: 0, fontSize: 12, color: "#d4d4d8", whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: 1.6 }}>{previewEnglish || "English translation not available."}</pre>
                   </div>
+                )}
+                {textTab === "speakers" && (
+                  <SpeakerEditor filename={previewFilename} version={selectedVersion} authKey={password} currentTime={videoTime} notify={setMessage} />
                 )}
               </div>
 
@@ -539,4 +543,308 @@ function VideoRow({ video, children }: { video: any; children: React.ReactNode }
 
 function EmptyState({ text }: { text: string }) {
   return <div style={{ padding: "24px", textAlign: "center", borderRadius: 8, border: "1px dashed #27272a", color: "#71717a", fontSize: 13 }}>{text}</div>;
+}
+
+// ---------------------------------------------------------------------------
+// Speaker attribution editor
+//
+// Shows the speech sections detected in the selected version and lets the
+// user assign each one to a speaker (Naran first — he is the host and the
+// most important voice to credit correctly). Assignments are saved as
+// time-range RULES (processed/<video>/corrections.json) that override
+// automatic naming on every future run of this video. Confirmed sections
+// also feed their cluster voice vectors into the persistent VOICE BANK
+// (speaker-bank/profiles.json), so known voices — Naran above all — are
+// recognized automatically on every later video. Rules and profiles stay
+// visible and editable here after creation.
+// ---------------------------------------------------------------------------
+
+type SpeechBlock = { start: number; end: number; origSpeaker: string; segs: number; sample: string };
+type AttrRule = { id: string; start: number; end: number; speaker: string; created_at?: string };
+
+const SPEAKER_COLORS: Record<string, string> = {
+  "Naran": "#3b82f6",
+  "Kamran": "#f59e0b",
+  "Other Speaker": "#a855f7",
+};
+const speakerColor = (name: string) => SPEAKER_COLORS[name] || "#22c55e";
+
+function SpeakerEditor({ filename, version, authKey, currentTime, notify }: {
+  filename: string; version: number; authKey: string; currentTime: number; notify: (m: string) => void;
+}) {
+  const RAW = "https://raw.githubusercontent.com/Hamlet-Tamaz/naran-english-translation-pipeline/main";
+  const videoId = filename.replace(".mp4", "");
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [blocks, setBlocks] = useState<SpeechBlock[]>([]);
+  const [rules, setRules] = useState<AttrRule[]>([]);
+  const [profiles, setProfiles] = useState<Record<string, { samples: number; videos: number; updated_at: string }>>({});
+  const [embeddings, setEmbeddings] = useState<Record<string, number[]>>({});
+  const [turns, setTurns] = useState<{ start: number; end: number; speaker: string }[]>([]);
+  const [newSpeaker, setNewSpeaker] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      setDirty(false);
+      const get = async (url: string) => {
+        const res = await fetch(`${url}?t=${Date.now()}`);
+        if (!res.ok) throw new Error(String(res.status));
+        return res.json();
+      };
+      try {
+        const tdata = await get(`${RAW}/processed/${videoId}/v${version}/translation.json`);
+        const segs = (tdata.segments || []).filter((s: any) => Number.isFinite(s.start) && Number.isFinite(s.end));
+        const bl: SpeechBlock[] = [];
+        for (const s of segs) {
+          const sp = s.speaker || "Naran";
+          const last = bl[bl.length - 1];
+          if (last && last.origSpeaker === sp && s.start - last.end < 1.0) {
+            last.end = s.end; last.segs++;
+          } else {
+            bl.push({ start: s.start, end: s.end, origSpeaker: sp, segs: 1, sample: (s.text || "").slice(0, 90) });
+          }
+        }
+        if (!cancelled) setBlocks(bl);
+      } catch { if (!cancelled) setBlocks([]); }
+
+      try { const d = await get(`${RAW}/processed/${videoId}/v${version}/diarization.json`); if (!cancelled) setTurns(d.turns || []); }
+      catch { if (!cancelled) setTurns([]); }
+
+      try { const e = await get(`${RAW}/processed/${videoId}/v${version}/speaker_embeddings.json`); if (!cancelled) setEmbeddings(e || {}); }
+      catch { if (!cancelled) setEmbeddings({}); }
+
+      try { const c = await get(`${RAW}/processed/${videoId}/corrections.json`); if (!cancelled) setRules(c.rules || []); }
+      catch { if (!cancelled) setRules([]); }
+
+      try {
+        const b = await get(`${RAW}/speaker-bank/profiles.json`);
+        if (!cancelled) {
+          const summary: Record<string, any> = {};
+          for (const [n, p] of Object.entries(b.profiles || {})) {
+            const prof = p as any;
+            summary[n] = { samples: prof.samples || 0, videos: (prof.videos || []).length, updated_at: prof.updated_at || "" };
+          }
+          setProfiles(summary);
+        }
+      } catch { if (!cancelled) setProfiles({}); }
+
+      if (!cancelled) setLoading(false);
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [filename, version]);
+
+  const fmt = (s: number) => `${Math.floor(s / 60)}:${Math.floor(s % 60).toString().padStart(2, "0")}`;
+  const genId = () => `r${Date.now().toString(36)}${Math.floor(Math.random() * 1e4).toString(36)}`;
+
+  const sortedRules = [...rules].sort((a, b) => a.start - b.start);
+  const effectiveSpeaker = (b: SpeechBlock): string => {
+    const mid = (b.start + b.end) / 2;
+    let winner: string | null = null;
+    for (const r of sortedRules) if (r.start <= mid && mid <= r.end) winner = r.speaker;
+    return winner || b.origSpeaker;
+  };
+
+  const speakerOptions = Array.from(new Set([
+    "Naran", "Kamran", "Other Speaker",
+    ...Object.keys(profiles),
+    ...blocks.map(b => b.origSpeaker),
+    ...rules.map(r => r.speaker),
+    ...(newSpeaker.trim() ? [newSpeaker.trim()] : []),
+  ]));
+
+  function assignBlock(idx: number, speaker: string) {
+    const b = blocks[idx];
+    setRules(prev => {
+      const kept = prev.filter(r => {
+        const overlap = Math.min(r.end, b.end) - Math.max(r.start, b.start);
+        const rMid = (r.start + r.end) / 2;
+        const inside = b.start <= rMid && rMid <= b.end;
+        return !(inside || overlap / Math.max(b.end - b.start, 0.01) > 0.5);
+      });
+      return [...kept, { id: genId(), start: b.start, end: b.end, speaker }];
+    });
+    setDirty(true);
+  }
+
+  function updateRule(id: string, patch: Partial<AttrRule>) {
+    setRules(prev => prev.map(r => r.id === id ? { ...r, ...patch } : r));
+    setDirty(true);
+  }
+
+  function addCustomRule() {
+    const start = Math.floor(currentTime);
+    setRules(prev => [...prev, { id: genId(), start, end: start + 30, speaker: "Naran" }]);
+    setDirty(true);
+  }
+
+  function dominantCluster(b: SpeechBlock): string | null {
+    let best: string | null = null, bestOv = 0;
+    for (const t of turns) {
+      const ov = Math.min(b.end, t.end) - Math.max(b.start, t.start);
+      if (ov > bestOv) { bestOv = ov; best = t.speaker; }
+    }
+    return best;
+  }
+
+  async function save() {
+    setSaving(true);
+    try {
+      // Confirmed sections feed the voice bank: each block's dominant
+      // acoustic cluster contributes its voice vector to the speaker the
+      // user assigned that block to.
+      const bySpeaker: Record<string, Set<string>> = {};
+      for (const b of blocks) {
+        const cid = dominantCluster(b);
+        if (!cid || !embeddings[cid]) continue;
+        const sp = effectiveSpeaker(b);
+        (bySpeaker[sp] = bySpeaker[sp] || new Set()).add(cid);
+      }
+      const bank_updates = Object.entries(bySpeaker).map(([speaker, cids]) => ({
+        speaker, vectors: [...cids].map(c => embeddings[c]),
+      }));
+
+      const res = await fetch("/api/speakers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: authKey, video: videoId, rules, bank_updates }),
+      });
+      const data = await res.json();
+      if (!res.ok) { notify(`Error: ${data.message || "Save failed"}`); return; }
+      if (data.profiles && Object.keys(data.profiles).length) {
+        setProfiles(prev => ({ ...prev, ...data.profiles }));
+      }
+      setDirty(false);
+      notify(`${data.message} — reprocess the video to apply.`);
+    } catch (e: any) {
+      notify(`Error: ${e.message}`);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function resetProfile(name: string) {
+    if (!window.confirm(`Reset the voice profile for "${name}"? Future runs will stop auto-recognizing this voice until you confirm sections again.`)) return;
+    try {
+      const res = await fetch("/api/speakers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: authKey, video: videoId, bank_resets: [name] }),
+      });
+      const data = await res.json();
+      if (!res.ok) { notify(`Error: ${data.message || "Reset failed"}`); return; }
+      setProfiles(prev => { const next = { ...prev }; delete next[name]; return next; });
+      notify(data.message);
+    } catch (e: any) {
+      notify(`Error: ${e.message}`);
+    }
+  }
+
+  if (loading) return <div style={{ padding: 24, textAlign: "center", color: "#71717a", fontSize: 13 }}>Loading speaker data…</div>;
+  if (blocks.length === 0) return <EmptyState text="No speaker data for this version yet — process the video first." />;
+
+  const hasEmbeddings = Object.keys(embeddings).length > 0;
+  const inputStyle: React.CSSProperties = { width: 58, padding: "4px 6px", borderRadius: 4, border: "1px solid #3f3f46", background: "#27272a", color: "#e4e4e7", fontSize: 12 };
+  const selectStyle = (color: string): React.CSSProperties => ({ padding: "4px 8px", borderRadius: 4, border: `1px solid ${color}60`, background: "#27272a", color, fontSize: 12, fontWeight: 600, cursor: "pointer" });
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* Sections detected in this version */}
+      <div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+          <div style={{ fontSize: 12, color: "#a1a1aa" }}>
+            Speech sections in v{version} — assign each to a speaker. Naran is the host: his sections matter most.
+          </div>
+          <button onClick={save} disabled={saving || !dirty}
+            style={{ padding: "6px 14px", borderRadius: 6, border: "none", background: dirty ? "#22c55e" : "#3f3f46", color: dirty ? "#052e16" : "#71717a", fontSize: 12, fontWeight: 600, cursor: dirty ? "pointer" : "not-allowed", flexShrink: 0 }}>
+            {saving ? "Saving…" : dirty ? "💾 Save corrections" : "Saved ✓"}
+          </button>
+        </div>
+        {!hasEmbeddings && (
+          <div style={{ fontSize: 11, color: "#fcd34d", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 6, padding: "6px 10px", marginBottom: 8 }}>
+            This version has no voice vectors (older run). Rules still save and apply to future runs — reprocess at Standard+ to also build persistent voice profiles.
+          </div>
+        )}
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 260, overflow: "auto" }}>
+          {blocks.map((b, i) => {
+            const eff = effectiveSpeaker(b);
+            const active = currentTime >= b.start && currentTime < b.end;
+            const changed = eff !== b.origSpeaker;
+            return (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 10px", borderRadius: 6, border: `1px solid ${active ? "#3b82f6" : "#27272a"}`, background: active ? "rgba(59,130,246,0.08)" : "rgba(255,255,255,0.02)" }}>
+                <span style={{ fontSize: 11, color: active ? "#3b82f6" : "#a1a1aa", fontFamily: "monospace", flexShrink: 0, minWidth: 86 }}>
+                  {fmt(b.start)}–{fmt(b.end)}
+                </span>
+                <select value={eff} onChange={e => assignBlock(i, e.target.value)} style={selectStyle(speakerColor(eff))}>
+                  {speakerOptions.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+                {changed && <span style={{ fontSize: 10, color: "#71717a", flexShrink: 0 }}>(auto: {b.origSpeaker})</span>}
+                <span style={{ fontSize: 11, color: "#71717a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.sample}</span>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center" }}>
+          <input value={newSpeaker} onChange={e => setNewSpeaker(e.target.value)} placeholder="New speaker name…"
+            style={{ ...inputStyle, width: 150 }} />
+          <span style={{ fontSize: 10, color: "#71717a" }}>Type a name to add it to the dropdowns.</span>
+        </div>
+      </div>
+
+      {/* Saved rules */}
+      <div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+          <div style={{ fontSize: 12, color: "#a1a1aa" }}>
+            Saved rules — applied to every future run of this video ({sortedRules.length})
+          </div>
+          <button onClick={addCustomRule} style={{ padding: "4px 10px", borderRadius: 4, border: "1px solid #3f3f46", background: "transparent", color: "#a1a1aa", fontSize: 11, cursor: "pointer" }}>+ Add rule</button>
+        </div>
+        {sortedRules.length === 0 ? (
+          <div style={{ fontSize: 11, color: "#71717a", padding: "8px 0" }}>No rules yet. Change a section's speaker above, or add one manually.</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 200, overflow: "auto" }}>
+            {sortedRules.map(r => (
+              <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", borderRadius: 6, border: "1px solid #27272a", background: "rgba(255,255,255,0.02)" }}>
+                <input type="number" step={0.5} min={0} value={r.start} onChange={e => updateRule(r.id, { start: parseFloat(e.target.value) || 0 })} style={inputStyle} />
+                <span style={{ fontSize: 11, color: "#71717a" }}>–</span>
+                <input type="number" step={0.5} min={0} value={r.end} onChange={e => updateRule(r.id, { end: parseFloat(e.target.value) || 0 })} style={inputStyle} />
+                <span style={{ fontSize: 10, color: "#52525b" }}>sec</span>
+                <select value={r.speaker} onChange={e => updateRule(r.id, { speaker: e.target.value })} style={selectStyle(speakerColor(r.speaker))}>
+                  {speakerOptions.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+                <button onClick={() => { setRules(prev => prev.filter(x => x.id !== r.id)); setDirty(true); }}
+                  style={{ marginLeft: "auto", background: "none", border: "none", color: "#71717a", fontSize: 14, cursor: "pointer" }} title="Delete rule">✕</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Voice bank */}
+      <div>
+        <div style={{ fontSize: 12, color: "#a1a1aa", marginBottom: 8 }}>
+          Voice bank — persistent profiles recognized automatically on future videos ({Object.keys(profiles).length})
+        </div>
+        {Object.keys(profiles).length === 0 ? (
+          <div style={{ fontSize: 11, color: "#71717a", padding: "8px 0" }}>
+            No voice profiles yet. Assign sections above and save — confirmed voices (with vectors from a Standard+ run) become persistent profiles. Start with Naran's sections.
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {Object.entries(profiles).map(([name, p]) => (
+              <div key={name} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 10px", borderRadius: 6, border: "1px solid #27272a", background: "rgba(255,255,255,0.02)" }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: speakerColor(name) }}>{name}</span>
+                <span style={{ fontSize: 11, color: "#71717a" }}>{p.samples} confirmed section(s) · {p.videos} video(s){p.updated_at ? ` · updated ${p.updated_at.slice(0, 10)}` : ""}</span>
+                <button onClick={() => resetProfile(name)} style={{ marginLeft: "auto", padding: "3px 10px", borderRadius: 4, border: "1px solid #7f1d1d", background: "transparent", color: "#fca5a5", fontSize: 11, cursor: "pointer" }}>Reset</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
