@@ -82,6 +82,73 @@ def merge_adjacent_turns(turns: list, max_gap_s: float = 0.3) -> list:
     return merged
 
 
+def compute_cluster_embeddings(audio_path: str, turns: list, output_dir: str,
+                               max_seconds_per_cluster: float = 90.0) -> dict:
+    """Compute one averaged x-vector per acoustic cluster using
+    pyannote/embedding. These vectors are the raw material for the persistent
+    voice bank (speaker-bank/profiles.json): clusters can then be recognized
+    across videos and matched to confirmed speakers like Naran.
+
+    Takes each cluster's LONGEST turns (short turns are noisy) up to
+    max_seconds_per_cluster of audio, embeds each turn, averages. Saves
+    speaker_embeddings.json {cluster_id: [floats]} into output_dir.
+    Returns {cluster_id: [floats]} or {} on any failure (feature degrades
+    gracefully — naming falls back to GPT-4o + structural heuristics)."""
+    if not turns:
+        return {}
+    hf_token = os.environ.get("HF_TOKEN")
+    if not hf_token:
+        print("  Embeddings: HF_TOKEN not set, skipping voice vectors")
+        return {}
+
+    try:
+        from huggingface_hub import login
+        from pyannote.audio import Inference
+        from pyannote.core import Segment
+        import numpy as np
+
+        login(token=hf_token)
+        inference = Inference("pyannote/embedding", window="whole")
+
+        # group turns by cluster, longest first
+        by_cluster = {}
+        for t in turns:
+            by_cluster.setdefault(t["speaker"], []).append(t)
+        for cid in by_cluster:
+            by_cluster[cid].sort(key=lambda t: t["end"] - t["start"], reverse=True)
+
+        embeddings = {}
+        for cid, cturns in by_cluster.items():
+            vecs = []
+            budget = max_seconds_per_cluster
+            for t in cturns:
+                dur = t["end"] - t["start"]
+                if dur < 1.0 or budget <= 0:
+                    continue
+                vec = inference.crop(audio_path, Segment(t["start"], t["end"]))
+                vec = np.asarray(vec, dtype=float).flatten()
+                if vec.size:
+                    vecs.append(vec)
+                    budget -= dur
+            if vecs:
+                mean = np.mean(np.stack(vecs), axis=0)
+                norm = np.linalg.norm(mean) or 1.0
+                embeddings[cid] = [round(float(x), 6) for x in (mean / norm)]
+
+        if embeddings:
+            out = os.path.join(output_dir, "speaker_embeddings.json")
+            with open(out, "w", encoding="utf-8") as f:
+                json.dump(embeddings, f, indent=1)
+            dims = len(next(iter(embeddings.values())))
+            print(f"  Voice vectors: {len(embeddings)} clusters x {dims} dims -> speaker_embeddings.json")
+        return embeddings
+
+    except Exception as e:
+        # e.g. pyannote/embedding model terms not accepted on the HF account
+        print(f"  Embedding extraction failed (voice bank inactive this run): {e}")
+        return {}
+
+
 def assign_acoustic_speakers(whisper_segments: list, turns: list) -> list:
     """Assign each Whisper segment the acoustic cluster with maximum
     temporal overlap. Segments keep all their fields; 'speaker' becomes
