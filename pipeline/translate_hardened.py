@@ -273,9 +273,24 @@ def translate_hardened(transcript: dict, output_dir: str, robustness: str = "sta
 
     # === SPEAKER DETECTION ===
     speaker_labels = None
-    if robustness in ("standard", "hardened", "maximum") and ru_segments:
-        print("  Detecting speakers with GPT-4o...")
+    canonical = ("Naran", "Kamran", "Other Speaker")
+    pre_labeled = bool(ru_segments) and all(seg.get("speaker") in canonical for seg in ru_segments)
+    if pre_labeled:
+        print("  Using acoustic speaker labels (diarization + cluster naming)")
+        speaker_labels = [seg["speaker"] for seg in ru_segments]
+    elif robustness in ("standard", "hardened", "maximum") and ru_segments:
+        print("  Detecting speakers with GPT-4o (text fallback)...")
         speaker_labels = detect_speakers_gpt4o(client, ru_segments, openai_key)
+        # Hysteresis smoothing — never rapid-switch speakers mid-speech
+        from diarize import smooth_speaker_labels
+        tmp = [{"start": s["start"], "end": s["end"], "speaker": sp}
+               for s, sp in zip(ru_segments, speaker_labels)]
+        tmp = smooth_speaker_labels(tmp, min_block_s=3.0)
+        speaker_labels = [t["speaker"] for t in tmp]
+        counts = {}
+        for sp in speaker_labels:
+            counts[sp] = counts.get(sp, 0) + 1
+        print(f"  Speakers after smoothing: {counts}")
 
     rules = load_rules()
 
@@ -301,14 +316,18 @@ def translate_hardened(transcript: dict, output_dir: str, robustness: str = "sta
 
     ru_translated = apply_rules(ru_translated, rules)
 
-    # English segments: pass through with "Other Speaker" label
+    # English segments: pass through untranslated (subtitles only).
+    # Keep the acoustic speaker label if one was assigned.
     en_translated_segments = []
     for seg in en_segments:
+        en_speaker = seg.get("speaker")
+        if en_speaker not in ("Naran", "Kamran", "Other Speaker"):
+            en_speaker = "Other Speaker"
         en_translated_segments.append({
             "start": seg["start"],
             "end": seg["end"],
             "text": seg["text"].strip(),
-            "speaker": "Other Speaker",
+            "speaker": en_speaker,
             "translation_confidence": "high",
             "original_language": "en"
         })
