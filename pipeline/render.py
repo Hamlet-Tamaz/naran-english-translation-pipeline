@@ -12,7 +12,42 @@ from translate_hardened import translate_hardened
 from voiceover import generate as gen_voiceover
 from subtitle import burn
 from caption import generate as gen_caption
-from diarize import diarize_audio, pause_heuristic_diarization, compare_methods
+from diarize import (
+    diarize_audio, assign_acoustic_speakers, smooth_speaker_labels,
+    name_clusters_gpt4o, pause_heuristic_diarization, compare_methods,
+)
+
+CANONICAL_SPEAKERS = ("Naran", "Kamran", "Other Speaker")
+
+def analyze_speakers(audio_path: str, transcript: dict, out_dir: str, robustness: str) -> None:
+    """Acoustic-first speaker analysis. Mutates transcript segments in place.
+
+    pyannote decides WHO speaks WHEN; smoothing removes label flapping;
+    GPT-4o names the acoustic clusters using the video structure prior.
+    Falls back to GPT-4o text detection (inside translate_hardened) if
+    diarization is unavailable."""
+    segments = transcript.get("segments", [])
+    if not segments:
+        return
+    if robustness not in ("standard", "hardened", "maximum"):
+        return
+
+    turns = diarize_audio(audio_path, out_dir)
+    if not turns:
+        print("  Acoustic diarization unavailable — translation will use GPT-4o text detection fallback")
+        return
+
+    segments = assign_acoustic_speakers(segments, turns)
+    segments = smooth_speaker_labels(segments, min_block_s=3.0)
+    name_map = name_clusters_gpt4o(segments, out_dir)
+    for seg in segments:
+        seg["speaker"] = name_map.get(seg.get("speaker"), "Naran")
+
+    counts = {}
+    for seg in segments:
+        counts[seg["speaker"]] = counts.get(seg["speaker"], 0) + 1
+    print(f"  Speakers (acoustic, smoothed, named): {counts}")
+    transcript["segments"] = segments
 
 def get_next_version(output_dir: str, video_id: str) -> int:
     versions_file = os.path.join(output_dir, video_id, "versions.json")
@@ -51,6 +86,9 @@ def main():
     print("  [2/5] Transcribing Russian...")
     transcript = transcribe(audio, out_dir)
 
+    print("  [2.5/5] Analyzing speakers (acoustic diarization)...")
+    analyze_speakers(audio, transcript, out_dir, robustness)
+
     print("  [3/5] Translating...")
     translation = translate_hardened(transcript, out_dir, robustness)
 
@@ -63,12 +101,16 @@ def main():
     print("  Generating caption...")
     gen_caption(translation, out_dir)
 
-    # Run diarization if robustness >= standard
+    # Write speaker comparison report (raw acoustic turns were saved by
+    # analyze_speakers to diarization.json during step 2.5)
     if robustness in ("standard", "hardened", "maximum"):
-        print("  Running speaker diarization...")
         pause_diarization = pause_heuristic_diarization(transcript)
-        pyannote_diarization = diarize_audio(audio, out_dir)
-        comparison = compare_methods(translation.get("segments", []), pyannote_diarization, pause_diarization)
+        raw_turns = []
+        diar_path = os.path.join(out_dir, "diarization.json")
+        if os.path.exists(diar_path):
+            with open(diar_path) as f:
+                raw_turns = json.load(f).get("turns", [])
+        comparison = compare_methods(translation.get("segments", []), raw_turns, pause_diarization)
         with open(os.path.join(out_dir, "speaker_comparison.json"), "w", encoding="utf-8") as f:
             json.dump(comparison, f, ensure_ascii=False, indent=2)
 
