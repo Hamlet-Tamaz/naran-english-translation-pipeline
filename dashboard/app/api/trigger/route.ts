@@ -6,9 +6,10 @@ export const maxDuration = 60;
 const REPO = "Hamlet-Tamaz/naran-english-translation-pipeline";
 const WORKFLOW = "process-video.yml";
 const STATE_PATH = ".run-state.json";
-// A dispatch without a known run status is assumed "maybe active" for up to
-// 35 minutes (the workflow itself times out at 30).
+// A dispatch is considered "possibly active" for this long after firing,
+// even if we failed to resolve its run id (runs list lag / API hiccup).
 const ACTIVE_WINDOW_MS = 35 * 60 * 1000;
+const ROBUSTNESS_LEVELS = ["draft", "standard", "high", "maximum"];
 
 interface DispatchRecord {
   filename: string;
@@ -22,76 +23,78 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 function gh(token: string, url: string, init: { method?: string; body?: string } = {}) {
   return fetch(url, {
     method: init.method || "GET",
-    body: init.body,
-    cache: "no-store",
     headers: {
-      Authorization: `token ${token}`,
-      Accept: "application/vnd.github.v3+json",
+      Authorization: `Bearer ${token}`,
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
       "Content-Type": "application/json",
+      "User-Agent": "naran-dashboard",
     },
+    body: init.body,
   });
 }
 
 async function readState(token: string): Promise<{ dispatches: DispatchRecord[]; sha: string | null }> {
-  const res = await gh(token, `https://api.github.com/repos/${REPO}/contents/${STATE_PATH}?ref=main`);
+  const res = await gh(token, `https://api.github.com/repos/${REPO}/contents/${STATE_PATH}`);
   if (!res.ok) return { dispatches: [], sha: null };
   const data = await res.json();
-  try {
-    const parsed = JSON.parse(Buffer.from(data.content, "base64").toString("utf-8"));
-    return { dispatches: parsed.dispatches || [], sha: data.sha };
-  } catch {
-    return { dispatches: [], sha: data.sha };
-  }
+  const parsed = JSON.parse(Buffer.from(data.content, "base64").toString("utf-8"));
+  return { dispatches: parsed.dispatches || [], sha: data.sha };
 }
 
 async function writeState(token: string, dispatches: DispatchRecord[], sha: string | null) {
-  const body: Record<string, any> = {
-    message: "dashboard: record pipeline dispatch",
-    content: Buffer.from(JSON.stringify({ dispatches }, null, 2)).toString("base64"),
-    branch: "main",
-  };
-  if (sha) body.sha = sha;
+  const content = Buffer.from(JSON.stringify({ dispatches }, null, 2)).toString("base64");
   await gh(token, `https://api.github.com/repos/${REPO}/contents/${STATE_PATH}`, {
     method: "PUT",
-    body: JSON.stringify(body),
+    body: JSON.stringify({ message: "dashboard: record dispatch", content, ...(sha ? { sha } : {}) }),
   });
 }
 
-// Find the run created by a dispatch: any run id greater than the newest one
-// that existed just before we dispatched. Returns null if ambiguous.
+// Snapshot the newest run id BEFORE dispatching, then after a short settle
+// window find exactly one newer run for our workflow — that's ours.
 async function captureRunId(token: string, beforeRunId: number, dispatchedAt: string): Promise<number | null> {
-  await sleep(4500); // GitHub takes a few seconds to register the run
-  const res = await gh(token, `https://api.github.com/repos/${REPO}/actions/workflows/${WORKFLOW}/runs?per_page=10`);
-  if (!res.ok) return null;
-  const runs = (await res.json()).workflow_runs || [];
-  const since = new Date(new Date(dispatchedAt).getTime() - 20000);
-  const candidates = runs.filter(
-    (r: any) => r.id > beforeRunId && new Date(r.created_at) >= since
-  );
-  return candidates.length === 1 ? candidates[0].id : null;
+  await sleep(4500);
+  try {
+    const res = await gh(token, `https://api.github.com/repos/${REPO}/actions/workflows/${WORKFLOW}/runs?per_page=10`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const since = new Date(dispatchedAt).getTime() - 10000;
+    const runs = (data.workflow_runs || []).filter(
+      (r: any) => r.id > beforeRunId && new Date(r.created_at).getTime() >= since,
+    );
+    if (runs.length === 1) return runs[0].id;
+    return null; // 0 or ambiguous — treat as unknown, window guard still applies
+  } catch {
+    return null;
+  }
 }
 
 async function runStatus(token: string, runId: number): Promise<{ status: string; conclusion: string | null } | null> {
   const res = await gh(token, `https://api.github.com/repos/${REPO}/actions/runs/${runId}`);
   if (!res.ok) return null;
-  const run = await res.json();
-  return { status: run.status, conclusion: run.conclusion };
+  const r = await res.json();
+  return { status: r.status, conclusion: r.conclusion };
 }
 
+// Did a run of this combo already land its completion commit since `sinceISO`?
 async function completionCommitSince(token: string, filename: string, robustness: string, sinceISO: string): Promise<boolean> {
-  const res = await gh(token, `https://api.github.com/repos/${REPO}/commits?per_page=50&since=${encodeURIComponent(sinceISO)}`);
+  const res = await gh(token, `https://api.github.com/repos/${REPO}/commits?since=${encodeURIComponent(sinceISO)}&per_page=30`);
   if (!res.ok) return false;
   const commits = await res.json();
   const needle = `pipeline: process ${filename} [${robustness}]`;
   return commits.some((c: any) => (c.commit?.message || "").startsWith(needle));
 }
 
-// Is this exact combo (video + quality) currently running?
-async function findActiveDuplicate(token: string, dispatches: DispatchRecord[], filename: string, robustness: string): Promise<DispatchRecord | null> {
+// Is this video already running at ANY quality? Parallel runs of the same
+// video both compute the same next version number and write to the same
+// version folder + versions.json — one run's results would be lost at the
+// final git rebase. (Different videos are safe: disjoint folders, and their
+// queue.json edits touch different lines and merge cleanly.)
+async function findActiveDuplicate(token: string, dispatches: DispatchRecord[], filename: string): Promise<DispatchRecord | null> {
   const now = Date.now();
   for (let i = dispatches.length - 1; i >= 0; i--) {
     const d = dispatches[i];
-    if (d.filename !== filename || d.robustness !== robustness) continue;
+    if (d.filename !== filename) continue;
     const age = now - new Date(d.dispatched_at).getTime();
     if (age > ACTIVE_WINDOW_MS) continue; // stale — assume dead
     if (d.run_id) {
@@ -102,7 +105,7 @@ async function findActiveDuplicate(token: string, dispatches: DispatchRecord[], 
       }
     }
     // Fallback without run status: a completion commit means it finished
-    if (await completionCommitSince(token, filename, robustness, d.dispatched_at)) continue;
+    if (await completionCommitSince(token, filename, d.robustness, d.dispatched_at)) continue;
     return d;
   }
   return null;
@@ -129,24 +132,34 @@ async function lastRunForCombo(token: string, dispatches: DispatchRecord[], file
 async function changedSince(token: string, path: string, sinceISO: string): Promise<boolean> {
   const res = await gh(token, `https://api.github.com/repos/${REPO}/commits?path=${encodeURIComponent(path)}&since=${encodeURIComponent(sinceISO)}&per_page=1`);
   if (!res.ok) return true; // can't check → assume changed (don't nag)
-  return (await res.json()).length > 0;
+  const commits = await res.json();
+  return commits.length > 0;
 }
 
 export async function POST(req: Request) {
   try {
-    const { filename, robustness = "standard", confirm = false } = await req.json();
+    const body = await req.json();
+    const filename: string = (body.filename || "").trim();
+    const robustness: string = (body.robustness || "standard").trim().toLowerCase();
+    const confirm: boolean = body.confirm === true;
+
     const token = process.env.GITHUB_TOKEN;
-    if (!token) return NextResponse.json({ message: "GITHUB_TOKEN not configured" }, { status: 500 });
+    if (!token) {
+      return NextResponse.json({ message: "GITHUB_TOKEN not configured" }, { status: 500 });
+    }
+    if (!ROBUSTNESS_LEVELS.includes(robustness)) {
+      return NextResponse.json({ message: "Invalid robustness level" }, { status: 400 });
+    }
     if (!filename) return NextResponse.json({ message: "No filename provided" }, { status: 400 });
 
     const { dispatches, sha } = await readState(token);
 
-    // BLOCK only when the exact same video + quality is already running.
-    // Different videos, or the same video at a different quality, may run in parallel.
-    const dup = await findActiveDuplicate(token, dispatches, filename, robustness);
+    // BLOCK when the same video is already running at ANY quality.
+    // Different videos may run in parallel.
+    const dup = await findActiveDuplicate(token, dispatches, filename);
     if (dup) {
       return NextResponse.json(
-        { message: `This exact run — ${filename} [${robustness}] — is already in progress. Wait for it to finish, or choose a different quality to run alongside it.` },
+        { message: `A run for ${filename} [${dup.robustness}] is already in progress. Parallel runs of the same video write to the same version folder and one would lose its results — please wait for it to finish. Different videos can run in parallel.` },
         { status: 409 }
       );
     }
@@ -163,47 +176,67 @@ export async function POST(req: Request) {
           if (rs && rs.status === "completed" && rs.conclusion !== "success") lastFailed = true;
         }
         if (!lastFailed) {
-          const [codeChanged, workflowChanged, videoChanged] = await Promise.all([
+          const checks = await Promise.all([
             changedSince(token, "pipeline", last.at),
             changedSince(token, ".github/workflows", last.at),
             changedSince(token, `incoming/${filename}`, last.at),
           ]);
-          if (!codeChanged && !workflowChanged && !videoChanged) {
-            return NextResponse.json({
-              requires_confirmation: true,
-              warning: `Nothing has changed since the last [${robustness}] run of ${filename} — same pipeline code, same video file, same quality. The result will very likely be identical. Reprocess anyway?`,
-            });
+          if (!checks.some(Boolean)) {
+            return NextResponse.json(
+              {
+                requires_confirmation: true,
+                warning: `Nothing has changed since the last ${filename} [${robustness}] run (${last.at.slice(0, 16).replace("T", " ")} UTC): same pipeline code, same video file, same quality. Re-processing will produce the same result and burn a full run. Run it anyway?`,
+              },
+              { status: 200 },
+            );
           }
         }
       }
     }
 
-    // Snapshot the newest run id so we can identify our run afterwards
+    // Snapshot newest run id so we can find OUR run after dispatch
     let beforeRunId = 0;
-    const preRes = await gh(token, `https://api.github.com/repos/${REPO}/actions/workflows/${WORKFLOW}/runs?per_page=1`);
-    if (preRes.ok) {
-      const preRuns = (await preRes.json()).workflow_runs || [];
-      if (preRuns.length) beforeRunId = preRuns[0].id;
-    }
+    try {
+      const res = await gh(token, `https://api.github.com/repos/${REPO}/actions/workflows/${WORKFLOW}/runs?per_page=1`);
+      if (res.ok) {
+        const data = await res.json();
+        beforeRunId = data.workflow_runs?.[0]?.id || 0;
+      }
+    } catch { /* non-fatal */ }
 
     const dispatchedAt = new Date().toISOString();
-    const response = await gh(token, `https://api.github.com/repos/${REPO}/actions/workflows/${WORKFLOW}/dispatches`, {
-      method: "POST",
-      body: JSON.stringify({ ref: "main", inputs: { video_filename: filename, robustness } }),
-    });
+    const dispatchRes = await gh(
+      token,
+      `https://api.github.com/repos/${REPO}/actions/workflows/${WORKFLOW}/dispatches`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          ref: "main",
+          inputs: { video_filename: filename, robustness },
+        }),
+      },
+    );
 
-    if (response.status === 204) {
-      // Best-effort: record the dispatch (with run id if we can capture it)
-      try {
-        const runId = await captureRunId(token, beforeRunId, dispatchedAt);
-        const updated = [...dispatches, { filename, robustness, dispatched_at: dispatchedAt, run_id: runId }].slice(-200);
-        await writeState(token, updated, sha);
-      } catch {}
-      return NextResponse.json({ message: `Pipeline triggered [${robustness}]` });
+    if (!dispatchRes.ok) {
+      const text = await dispatchRes.text();
+      return NextResponse.json(
+        { message: "Failed to trigger pipeline", details: text },
+        { status: dispatchRes.status },
+      );
     }
-    const data = await response.json().catch(() => ({}));
-    return NextResponse.json({ message: data.message || "Trigger failed" }, { status: response.status });
-  } catch (e: any) {
-    return NextResponse.json({ message: `Error: ${e.message}` }, { status: 500 });
+
+    const run_id = await captureRunId(token, beforeRunId, dispatchedAt);
+    dispatches.push({ filename, robustness, dispatched_at: dispatchedAt, run_id });
+    await writeState(token, dispatches.slice(-200), sha);
+
+    return NextResponse.json({
+      message: `Pipeline triggered for ${filename} [${robustness}]`,
+      run_id,
+    });
+  } catch (err) {
+    return NextResponse.json(
+      { message: "Failed to trigger pipeline", details: String(err) },
+      { status: 500 },
+    );
   }
 }
