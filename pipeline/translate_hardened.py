@@ -28,91 +28,94 @@ def normalize_speaker(speaker: str) -> str:
     else:
         return "Other Speaker"
 
-def parse_segments_response(raw, original_segments):
-    try:
-        data = json.loads(raw)
-        parsed = data.get("segments", data.get("translations", []))
-        if not parsed and "text" in data:
-            words = data["text"].split()
-            per_seg = max(1, len(words) // len(original_segments))
-            parsed = []
-            for i, orig in enumerate(original_segments):
-                start = int(i * per_seg)
-                end = int((i + 1) * per_seg) if i < len(original_segments) - 1 else len(words)
-                parsed.append({
-                    "start": orig["start"],
-                    "end": orig["end"],
-                    "text": " ".join(words[start:end]),
-                    "speaker": "Naran"
-                })
+def translate_chunk(client, segments, chunk_index, total_chunks):
+    """Translate a chunk of segments with GPT-4o."""
+    full_ru = "\\n".join(f"{i+1}. {seg['text'].strip()}" for i, seg in enumerate(segments))
 
-        for i, p in enumerate(parsed):
-            if i < len(original_segments):
-                p["start"] = original_segments[i].get("start", p.get("start", 0))
-                p["end"] = original_segments[i].get("end", p.get("end", 0))
-            p["speaker"] = normalize_speaker(p.get("speaker", "Naran"))
+    prompt = f"""Translate these Russian sentences to English. PRESERVE ALL NEGATION EXACTLY.
 
-        return parsed
-    except Exception as e:
-        print(f"  [WARN] Failed to parse GPT response: {e}")
-        return [{"start": s["start"], "end": s["end"], "text": s["text"], "speaker": "Naran"} for s in original_segments]
-
-def translate_gpt4o_mini(client, segments):
-    full_ru = " ".join(seg["text"].strip() for seg in segments)
-    prompt = "Translate Russian to English. Return JSON with 'segments' array. Each segment: start (number), end (number), text (string), speaker (string).\n\nRussian:\n" + full_ru
-    response = client.chat.completions.create(
-        model="gpt-4o-mini", messages=[
-            {"role": "system", "content": "Precise translator. Preserve negation exactly. Use speakers 'Naran', 'Kamran', 'Other Speaker'."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.1, max_tokens=4000, response_format={"type": "json_object"}
-    )
-    parsed = parse_segments_response(response.choices[0].message.content.strip(), segments)
-    return {"full_text": " ".join(s.get("text", "") for s in parsed), "segments": parsed}
-
-def translate_gpt4o_contextual(client, segments):
-    full_ru = " ".join(seg["text"].strip() for seg in segments)
-    prompt = """Translate Russian to English. PRESERVE ALL NEGATION EXACTLY.
 Rules:
 1. "не встречал" = "did NOT meet" (never "met")
-2. "армян нет" = "there are NO Armenians" (never "Armenians are")
+2. "армян нет" = "there are NO Armenians"
 3. "не упоминаются" = "are NOT mentioned"
 4. Keep argument structure intact
+5. Do NOT add explanations, only translations
 
-Speaker labels (VERY IMPORTANT):
-- The host who debunks claims = "Naran"
-- People he quotes/responds to = "Kamran"
-- If someone else speaks (e.g., shows a book, documentary clip) = "Other Speaker"
+For each line, return the English translation on the SAME line number.
 
 Russian:
-""" + full_ru + """
+{full_ru}
 
-Return a JSON object with a 'segments' array. Each segment must have: start (number), end (number), text (string), speaker (string)."""
-    response = client.chat.completions.create(
-        model="gpt-4o", messages=[
-            {"role": "system", "content": "Precise translator. NEVER flip negations. Use speaker labels 'Naran', 'Kamran', and 'Other Speaker'."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.1, max_tokens=4000, response_format={"type": "json_object"}
-    )
-    parsed = parse_segments_response(response.choices[0].message.content.strip(), segments)
-    return {"full_text": " ".join(s.get("text", "") for s in parsed), "segments": parsed}
+Return ONLY a JSON object like: {{"translations": ["English sentence 1", "English sentence 2", ...]}}
+"""
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "Precise translator. NEVER flip negations. Return ONLY valid JSON."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.1,
+            max_tokens=4000,
+            response_format={"type": "json_object"}
+        )
+
+        raw = response.choices[0].message.content.strip()
+        data = json.loads(raw)
+        translations = data.get("translations", [])
+
+        if len(translations) != len(segments):
+            print(f"  [WARN] Chunk {chunk_index+1}/{total_chunks}: Got {len(translations)} translations for {len(segments)} segments")
+            # Pad or truncate
+            while len(translations) < len(segments):
+                translations.append(segments[len(translations)]["text"])
+            translations = translations[:len(segments)]
+
+        parsed = []
+        for i, seg in enumerate(segments):
+            parsed.append({
+                "start": seg["start"],
+                "end": seg["end"],
+                "text": translations[i],
+                "speaker": normalize_speaker(seg.get("speaker", "Naran"))
+            })
+
+        return parsed
+
+    except Exception as e:
+        print(f"  [ERROR] Chunk {chunk_index+1}/{total_chunks} translation failed: {e}")
+        raise
+
+def translate_gpt4o_chunked(client, segments):
+    """Translate in chunks of 5 segments to avoid context limits."""
+    CHUNK_SIZE = 5
+    all_parsed = []
+    total_chunks = (len(segments) + CHUNK_SIZE - 1) // CHUNK_SIZE
+
+    for i in range(0, len(segments), CHUNK_SIZE):
+        chunk = segments[i:i+CHUNK_SIZE]
+        chunk_num = i // CHUNK_SIZE + 1
+        print(f"  Translating chunk {chunk_num}/{total_chunks} ({len(chunk)} segments)...")
+        parsed = translate_chunk(client, chunk, chunk_num - 1, total_chunks)
+        all_parsed.extend(parsed)
+
+    return {
+        "full_text": " ".join(s["text"] for s in all_parsed),
+        "segments": all_parsed
+    }
+
+def translate_gpt4o_mini(client, segments):
+    return translate_gpt4o_chunked(client, segments)
+
+def translate_gpt4o_contextual(client, segments):
+    return translate_gpt4o_chunked(client, segments)
 
 def translate_gpt4o_literal(client, segments):
-    full_ru = " ".join(seg["text"].strip() for seg in segments)
-    prompt = "Translate Russian to English LITERALLY. Do NOT rephrase. Do NOT smooth. Preserve exact meaning including negations.\n\nRussian:\n" + full_ru + "\n\nReturn JSON with 'segments' array."
-    response = client.chat.completions.create(
-        model="gpt-4o", messages=[
-            {"role": "system", "content": "Literal translator. Word-for-word accuracy. Preserve negation."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.0, max_tokens=4000, response_format={"type": "json_object"}
-    )
-    parsed = parse_segments_response(response.choices[0].message.content.strip(), segments)
-    return {"full_text": " ".join(s.get("text", "") for s in parsed), "segments": parsed}
+    return translate_gpt4o_chunked(client, segments)
 
 def back_translate_check(client, english_text, russian_original):
-    prompt = f"Translate this English back to Russian:\n\nEnglish:\n{english_text}\n\nReturn only the Russian text."
+    prompt = f"Translate this English back to Russian:\\n\\nEnglish:\\n{english_text}\\n\\nReturn only the Russian text."
     response = client.chat.completions.create(
         model="gpt-4o-mini", messages=[{"role": "user", "content": prompt}],
         temperature=0.0, max_tokens=4000
@@ -180,10 +183,10 @@ def translate_hardened(transcript: dict, output_dir: str, robustness: str = "sta
         print("  [Mode: FREE] Google Translate only")
         ru_translated = translate_google_only(ru_segments)
     elif robustness == "basic":
-        print("  [Mode: BASIC] GPT-4o-mini single pass")
+        print("  [Mode: BASIC] GPT-4o-mini chunked")
         ru_translated = translate_gpt4o_mini(client, ru_segments)
     elif robustness == "standard":
-        print("  [Mode: STANDARD] GPT-4o contextual + speaker detection")
+        print("  [Mode: STANDARD] GPT-4o chunked + speaker detection")
         ru_translated = translate_gpt4o_contextual(client, ru_segments)
     elif robustness in ("hardened", "maximum"):
         print("  [Mode: HARDENED] Dual translation + back-check + rules")
@@ -198,6 +201,7 @@ def translate_hardened(transcript: dict, output_dir: str, robustness: str = "sta
 
     ru_translated = apply_rules(ru_translated, rules)
 
+    # English segments: pass through with "Other Speaker" label
     en_translated_segments = []
     for seg in en_segments:
         en_translated_segments.append({
@@ -216,6 +220,11 @@ def translate_hardened(transcript: dict, output_dir: str, robustness: str = "sta
         "full_text": " ".join(s["text"] for s in all_translated),
         "segments": all_translated
     }
+
+    # Save translation.json
+    with open(os.path.join(output_dir, "translation.json"), "w", encoding="utf-8") as f:
+        json.dump(final, f, ensure_ascii=False, indent=2)
+    print(f"  Saved translation.json ({len(all_translated)} segments)")
 
     variants = {
         "robustness": robustness,
