@@ -52,6 +52,7 @@ export default function Dashboard() {
   const [selectedVersion, setSelectedVersion] = useState<number>(0);
   const [videoTime, setVideoTime] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
+  const [speakerMap, setSpeakerMap] = useState<Record<string, number>>({});
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -170,17 +171,23 @@ export default function Dashboard() {
     } catch (e) { setPreviewRussian(""); }
 
     try {
-      const res = await fetch(`https://raw.githubusercontent.com/Hamlet-Tamaz/naran-english-translation-pipeline/main/processed/${videoId}/v${vNum}/original_english.txt`);
-      const enText = await res.text();
-      if (enText) setPreviewEnglish(prev => prev ? prev + "\n\n[Original English segments:]\n" + enText : enText);
-    } catch (e) {}
-
-    try {
       const res = await fetch(`https://raw.githubusercontent.com/Hamlet-Tamaz/naran-english-translation-pipeline/main/processed/${videoId}/v${vNum}/translation.json`);
       const data = await res.json();
-      const fullText = data.full_text || (data.segments ? data.segments.map((s: any) => s.text).join(" ") : "");
+      const fullText = data.full_text || (data.segments ? data.segments.map((s: any) => `[${s.speaker || "Naran"}] ${s.text}`).join("\n\n") : "");
       setPreviewEnglish(fullText);
-    } catch (e) { setPreviewEnglish(""); }
+      // Also load speaker map
+      const spMap: Record<string, number> = {};
+      if (data.segments) {
+        for (const seg of data.segments) {
+          const sp = seg.speaker || "Naran";
+          spMap[sp] = (spMap[sp] || 0) + 1;
+        }
+      }
+      setSpeakerMap(spMap);
+    } catch (e) { 
+      setPreviewEnglish(""); 
+      setSpeakerMap({});
+    }
 
     setVideoTime(0); setVideoDuration(0);
   }
@@ -355,15 +362,21 @@ export default function Dashboard() {
       </Section>
 
       {previewVideo && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.9)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 24, overflow: "auto" }} onClick={() => setPreviewVideo(null)}>
-          <div style={{ maxWidth: 900, width: "100%", maxHeight: "90vh", display: "flex", flexDirection: "column", background: "#18181b", borderRadius: 12, overflow: "hidden", border: "1px solid #27272a" }} onClick={e => e.stopPropagation()}>
-            <div style={{ padding: "16px 20px", borderBottom: "1px solid #27272a", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
-              <span style={{ fontSize: 15, fontWeight: 500, color: "#fafafa" }}>Preview</span>
-              <button onClick={() => setPreviewVideo(null)} style={{ background: "none", border: "none", color: "#a1a1aa", fontSize: 20, cursor: "pointer" }}>×</button>
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.92)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 16, overflow: "hidden" }} onClick={() => setPreviewVideo(null)}>
+          <div style={{ maxWidth: 960, width: "100%", maxHeight: "95vh", display: "flex", flexDirection: "column", background: "#18181b", borderRadius: 12, overflow: "hidden", border: "1px solid #27272a" }} onClick={e => e.stopPropagation()}>
+
+            {/* Header */}
+            <div style={{ padding: "14px 20px", borderBottom: "1px solid #27272a", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0, background: "#18181b" }}>
+              <div>
+                <span style={{ fontSize: 15, fontWeight: 500, color: "#fafafa" }}>Preview</span>
+                <span style={{ fontSize: 11, color: "#71717a", marginLeft: 8 }}>{previewFilename}</span>
+              </div>
+              <button onClick={() => setPreviewVideo(null)} style={{ background: "none", border: "none", color: "#a1a1aa", fontSize: 20, cursor: "pointer", lineHeight: 1 }}>×</button>
             </div>
 
+            {/* Version selector */}
             {previewVersions.length > 1 && (
-              <div style={{ padding: "12px 20px", borderBottom: "1px solid #27272a", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", flexShrink: 0 }}>
+              <div style={{ padding: "10px 20px", borderBottom: "1px solid #27272a", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", flexShrink: 0, background: "#18181b" }}>
                 <span style={{ fontSize: 12, color: "#a1a1aa" }}>Version:</span>
                 {previewVersions.map(v => (
                   <button key={v.number} onClick={() => { setSelectedVersion(v.number); loadVersionPreview(previewFilename, v.number); }}
@@ -374,24 +387,30 @@ export default function Dashboard() {
               </div>
             )}
 
-            <video ref={videoRef} controls style={{ width: "100%", display: "block", maxHeight: "50vh" }} src={previewVideo} onTimeUpdate={handleTimeUpdate} onLoadedMetadata={handleTimeUpdate} />
+            {/* Video player - constrained height */}
+            <div style={{ flexShrink: 0, background: "#000" }}>
+              <video ref={videoRef} controls style={{ width: "100%", display: "block", maxHeight: "40vh", minHeight: 200 }} src={previewVideo} onTimeUpdate={handleTimeUpdate} onLoadedMetadata={handleTimeUpdate} />
+            </div>
 
-            <div style={{ padding: "8px 20px", borderBottom: "1px solid #27272a", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+            {/* Show original toggle */}
+            <div style={{ padding: "8px 20px", borderBottom: "1px solid #27272a", display: "flex", alignItems: "center", gap: 12, flexShrink: 0, background: "#18181b" }}>
               <button onClick={() => setShowOriginal(!showOriginal)} style={{ padding: "6px 12px", borderRadius: 4, border: "1px solid #3f3f46", background: showOriginal ? "rgba(59,130,246,0.2)" : "transparent", color: showOriginal ? "#3b82f6" : "#a1a1aa", fontSize: 12, cursor: "pointer" }}>
                 {showOriginal ? "Hide Original" : "Show Original Video"}
               </button>
               <span style={{ fontSize: 11, color: "#71717a" }}>Compare with source</span>
             </div>
 
+            {/* Original video (collapsible) */}
             {showOriginal && (
               <div style={{ padding: "12px 20px", borderBottom: "1px solid #27272a", background: "#0a0a0a", flexShrink: 0 }}>
                 <div style={{ fontSize: 11, color: "#a1a1aa", marginBottom: 8 }}>Original Source Video</div>
-                <video controls style={{ width: "100%", display: "block", maxHeight: 300 }} src={`https://pub-9636f37ce40b48d4b83af40ce7c35e71.r2.dev/${previewFilename}`} />
+                <video controls style={{ width: "100%", display: "block", maxHeight: 200 }} src={`https://pub-9636f37ce40b48d4b83af40ce7c35e71.r2.dev/${previewFilename}`} />
               </div>
             )}
 
+            {/* Time scrubber */}
             {videoDuration > 0 && (
-              <div style={{ padding: "8px 20px", borderBottom: "1px solid #27272a", flexShrink: 0 }}>
+              <div style={{ padding: "8px 20px", borderBottom: "1px solid #27272a", flexShrink: 0, background: "#18181b" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <span style={{ fontSize: 11, color: "#a1a1aa", minWidth: 36 }}>{formatTime(videoTime)}</span>
                   <input type="range" min={0} max={videoDuration} step={0.1} value={videoTime} onChange={handleScrub} style={{ flex: 1, accentColor: "#3b82f6" }} />
@@ -400,24 +419,47 @@ export default function Dashboard() {
               </div>
             )}
 
-            <div style={{ padding: "16px 20px", overflow: "auto", flex: 1, minHeight: 0 }}>
-              <div style={{ display: "flex", gap: 12, marginBottom: 12, borderBottom: "1px solid #27272a", paddingBottom: 8, flexShrink: 0 }}>
+            {/* Speaker map indicator */}
+            {Object.keys(speakerMap).length > 0 && (
+              <div style={{ padding: "6px 20px", borderBottom: "1px solid #27272a", flexShrink: 0, background: "#18181b" }}>
+                <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 11, color: "#71717a" }}>Speakers detected:</span>
+                  {Object.entries(speakerMap).map(([sp, count]) => (
+                    <span key={sp} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 4, background: "#27272a", color: "#d4d4d8" }}>
+                      {sp} ({count} segments)
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Text tabs + content - scrollable area */}
+            <div style={{ padding: "12px 20px", overflow: "auto", flex: 1, minHeight: 0, background: "#18181b" }}>
+              <div style={{ display: "flex", gap: 12, marginBottom: 12, borderBottom: "1px solid #27272a", paddingBottom: 8, flexShrink: 0, position: "sticky", top: 0, background: "#18181b", zIndex: 1 }}>
                 <button onClick={() => setTextTab("caption")} style={{ background: "none", border: "none", color: textTab === "caption" ? "#3b82f6" : "#71717a", fontSize: 12, fontWeight: 500, cursor: "pointer", borderBottom: textTab === "caption" ? "2px solid #3b82f6" : "2px solid transparent", paddingBottom: 4 }}>Caption</button>
                 <button onClick={() => setTextTab("russian")} style={{ background: "none", border: "none", color: textTab === "russian" ? "#3b82f6" : "#71717a", fontSize: 12, fontWeight: 500, cursor: "pointer", borderBottom: textTab === "russian" ? "2px solid #3b82f6" : "2px solid transparent", paddingBottom: 4 }}>Russian Original</button>
                 <button onClick={() => setTextTab("english")} style={{ background: "none", border: "none", color: textTab === "english" ? "#3b82f6" : "#71717a", fontSize: 12, fontWeight: 500, cursor: "pointer", borderBottom: textTab === "english" ? "2px solid #3b82f6" : "2px solid transparent", paddingBottom: 4 }}>English Translation</button>
               </div>
 
-              {textTab === "caption" && (
-                <pre style={{ margin: 0, fontSize: 12, color: "#d4d4d8", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{previewCaption}</pre>
-              )}
-              {textTab === "russian" && (
-                <pre style={{ margin: 0, fontSize: 12, color: "#d4d4d8", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{previewRussian || "Russian original not available for this version."}</pre>
-              )}
-              {textTab === "english" && (
-                <pre style={{ margin: 0, fontSize: 12, color: "#d4d4d8", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{previewEnglish || "English translation not available."}</pre>
-              )}
+              <div style={{ minHeight: 100 }}>
+                {textTab === "caption" && (
+                  <pre style={{ margin: 0, fontSize: 12, color: "#d4d4d8", whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: 1.6 }}>{previewCaption}</pre>
+                )}
+                {textTab === "russian" && (
+                  <div>
+                    <div style={{ fontSize: 11, color: "#71717a", marginBottom: 8 }}>Full original Russian text:</div>
+                    <pre style={{ margin: 0, fontSize: 12, color: "#d4d4d8", whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: 1.6 }}>{previewRussian || "Russian original not available for this version."}</pre>
+                  </div>
+                )}
+                {textTab === "english" && (
+                  <div>
+                    <div style={{ fontSize: 11, color: "#71717a", marginBottom: 8 }}>Full English translation with speaker labels:</div>
+                    <pre style={{ margin: 0, fontSize: 12, color: "#d4d4d8", whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: 1.6 }}>{previewEnglish || "English translation not available."}</pre>
+                  </div>
+                )}
+              </div>
 
-              <div style={{ display: "flex", gap: 8, marginTop: 12, flexShrink: 0 }}>
+              <div style={{ display: "flex", gap: 8, marginTop: 16, flexShrink: 0, paddingTop: 12, borderTop: "1px solid #27272a" }}>
                 <a href={previewVideo} download style={{ padding: "8px 16px", borderRadius: 6, border: "none", background: "#3b82f6", color: "#fff", fontSize: 13, fontWeight: 500, textDecoration: "none", display: "inline-block" }}>⬇ Download Video</a>
                 <button onClick={() => { const text = textTab === "russian" ? previewRussian : textTab === "english" ? previewEnglish : previewCaption; navigator.clipboard.writeText(text); setMessage("Text copied!"); }} style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid #3f3f46", background: "transparent", color: "#a1a1aa", fontSize: 13, cursor: "pointer" }}>📋 Copy {textTab === "caption" ? "Caption" : textTab === "russian" ? "Russian" : "English"}</button>
               </div>
