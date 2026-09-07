@@ -2,6 +2,7 @@ import whisper
 import json
 import os
 import re
+import subprocess
 
 MODEL = "base"
 
@@ -48,38 +49,36 @@ def detect_segment_language(text: str) -> str:
         return "en"
     return "ru"
 
-def segments_overlap(seg1, seg2, threshold=0.5):
-    """Check if two segments overlap by more than threshold ratio."""
-    start = max(seg1["start"], seg2["start"])
-    end = min(seg1["end"], seg2["end"])
-    if start >= end:
-        return False
-    overlap = end - start
-    seg1_duration = seg1["end"] - seg1["start"]
-    seg2_duration = seg2["end"] - seg2["start"]
-    return overlap > seg1_duration * threshold or overlap > seg2_duration * threshold
+def get_audio_duration(audio_path: str) -> float:
+    cmd = [
+        "ffprobe", "-v", "error",
+        "-show_entries", "format=duration",
+        "-of", "default=noprint_wrappers=1:nokey=1",
+        audio_path
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+    return float(result.stdout.strip())
+
+def extract_tail_audio(audio_path: str, start_time: float, output_path: str):
+    """Extract tail portion of audio for separate transcription."""
+    cmd = [
+        "ffmpeg", "-y", "-i", audio_path,
+        "-ss", str(start_time),
+        "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1",
+        output_path
+    ]
+    subprocess.run(cmd, check=True, capture_output=True)
 
 def transcribe(audio_path: str, output_dir: str) -> dict:
     model = whisper.load_model(MODEL)
 
-    # Pass 1: Transcribe with auto language detection (no language lock)
+    # Pass 1: Auto language detection
     print("  [Pass 1] Auto language detection...")
     result_auto = model.transcribe(audio_path, word_timestamps=True)
     auto_lang = result_auto.get("language", "unknown")
     print(f"  Auto-detected language: {auto_lang}")
 
-    # Pass 2: Always run English transcription to catch embedded English segments
-    print("  [Pass 2] English transcription...")
-    result_en = model.transcribe(audio_path, language="en", word_timestamps=True)
-
-    # Pass 3: Always run Russian transcription for completeness
-    print("  [Pass 3] Russian transcription...")
-    result_ru = model.transcribe(audio_path, language="ru", word_timestamps=True)
-
-    # Start with auto-detected segments as base
     all_segments = []
-
-    # Add auto-detected segments with language detection
     for seg in result_auto.get("segments", []):
         text = seg.get("text", "").strip()
         if not text:
@@ -90,34 +89,43 @@ def transcribe(audio_path: str, output_dir: str) -> dict:
             seg["text"] = fix_transcription(text)
         all_segments.append(seg)
 
-    # Add English segments from Pass 2 that don't overlap with existing segments
-    auto_texts = set(s["text"].strip().lower() for s in all_segments)
-    en_added = 0
-    for en_seg in result_en.get("segments", []):
-        en_text = en_seg["text"].strip()
-        if not en_text:
-            continue
-        # Check if this segment is mostly English
-        words = en_text.split()
-        ascii_words = [w for w in words if w.isascii() and len(w) > 2]
-        if len(ascii_words) <= len(words) * 0.4:
-            continue  # Skip if not mostly English
+    # Check if we missed tail audio
+    audio_duration = get_audio_duration(audio_path)
+    last_seg_end = max((s["end"] for s in all_segments), default=0)
+    missing_tail = audio_duration - last_seg_end
 
-        # Check if this exact text already exists
-        if en_text.lower() in auto_texts:
-            continue
+    print(f"  Audio duration: {audio_duration:.1f}s, Last segment ends: {last_seg_end:.1f}s, Missing: {missing_tail:.1f}s")
 
-        # Check overlap with existing segments
-        overlaps = False
-        for existing in all_segments:
-            if segments_overlap(en_seg, existing):
-                overlaps = True
-                break
+    # Pass 2: If >5s missing at tail, extract and transcribe separately
+    if missing_tail > 5:
+        print(f"  [Pass 2] Transcribing missing tail ({missing_tail:.1f}s) with English...")
+        tail_path = os.path.join(output_dir, "tail_audio.wav")
+        extract_tail_audio(audio_path, last_seg_end - 2, tail_path)  # Start 2s before last segment for overlap
 
-        if not overlaps:
-            en_seg["detected_language"] = "en"
-            all_segments.append(en_seg)
-            en_added += 1
+        result_tail = model.transcribe(tail_path, language="en", word_timestamps=True)
+
+        tail_segments_added = 0
+        for seg in result_tail.get("segments", []):
+            text = seg.get("text", "").strip()
+            if not text:
+                continue
+            # Adjust timestamps to absolute
+            seg["start"] += last_seg_end - 2
+            seg["end"] += last_seg_end - 2
+
+            # Check if mostly English
+            words = text.split()
+            ascii_words = [w for w in words if w.isascii() and len(w) > 2]
+            if len(ascii_words) > len(words) * 0.3:
+                seg["detected_language"] = "en"
+                all_segments.append(seg)
+                tail_segments_added += 1
+                print(f"    [ENGLISH TAIL] [{seg['start']:.1f}-{seg['end']:.1f}] {text[:60]}...")
+
+        if os.path.exists(tail_path):
+            os.remove(tail_path)
+
+        print(f"  Added {tail_segments_added} segments from tail transcription")
 
     # Sort by timestamp
     all_segments.sort(key=lambda s: s["start"])
@@ -136,6 +144,6 @@ def transcribe(audio_path: str, output_dir: str) -> dict:
 
     ru_count = len([s for s in all_segments if s.get("detected_language") == "ru"])
     en_count = len([s for s in all_segments if s.get("detected_language") == "en"])
-    print(f"  Transcription: {ru_count} Russian, {en_count} English segments (added {en_added} from English pass)")
+    print(f"  Transcription: {ru_count} Russian, {en_count} English segments")
 
     return result
