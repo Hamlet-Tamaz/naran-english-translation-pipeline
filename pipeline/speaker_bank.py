@@ -29,7 +29,7 @@ BANK_PATH = os.path.join("speaker-bank", "profiles.json")
 
 # Cosine similarity threshold for accepting a cluster -> profile match.
 # pyannote/embedding x-vectors: same speaker across videos of one channel
-typically scores 0.6-0.9; different speakers on clean speech score < 0.5.
+# typically scores 0.6-0.9; different speakers on clean speech score < 0.5.
 MATCH_THRESHOLD = 0.55
 
 
