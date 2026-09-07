@@ -1,0 +1,23 @@
+{
+  "final": {
+    "method": "Acoustic diarization + GPT-4o cluster naming",
+    "speakers_found": [
+      "Kamran",
+      "Naran",
+      "Other Speaker"
+    ],
+    "segment_count": 37
+  },
+  "pyannote_raw": {
+    "method": "pyannote.audio (acoustic)",
+    "speakers_found": [],
+    "segment_count": 0
+  },
+  "pause_heuristic": {
+    "method": "Pause-based heuristic",
+    "speakers_found": [
+      "Speaker1"
+    ],
+    "segment_count": 37
+  }
+}
