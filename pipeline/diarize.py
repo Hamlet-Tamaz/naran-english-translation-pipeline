@@ -17,6 +17,50 @@ import json
 # ---------------------------------------------------------------------------
 
 
+def _versions() -> dict:
+    """Installed versions of the audio stack — recorded so a failed run's
+    artifacts say exactly which dependency drifted."""
+    try:
+        from importlib.metadata import version, PackageNotFoundError
+        def v(pkg):
+            try:
+                return version(pkg)
+            except PackageNotFoundError:
+                return "not installed"
+        return {"pyannote.audio": v("pyannote.audio"),
+                "huggingface_hub": v("huggingface-hub"),
+                "torch": v("torch"), "torchaudio": v("torchaudio")}
+    except Exception:
+        return {}
+
+
+def _write_status(output_dir: str, key: str, info: dict) -> None:
+    """Merge {key: info} into diarization_status.json in output_dir.
+
+    This file is committed with each version, so the dashboard (and we) can
+    see WHY diarization failed without needing CI log access."""
+    try:
+        path = os.path.join(output_dir, "diarization_status.json")
+        data = {}
+        if os.path.exists(path):
+            with open(path, encoding="utf-8") as f:
+                data = json.load(f)
+        data[key] = info
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+
+_AUTH_HINT = ("If 401/403: accept terms for ALL THREE gated repos on the HF "
+              "account owning HF_TOKEN — pyannote/speaker-diarization-3.1, "
+              "pyannote/segmentation-3.0 and pyannote/embedding — and use a "
+              "read-scoped token (fine-grained tokens need 'Read access to "
+              "contents of all public gated repos'). If TypeError/ImportError: "
+              "dependency drift — CI must install pyannote.audio==3.4.0 with "
+              "huggingface_hub<1.0 (see requirements.txt pins).")
+
+
 def diarize_audio(audio_path: str, output_dir: str) -> list:
     """Run pyannote.audio speaker diarization. Returns list of
     {start, end, speaker} with raw acoustic cluster ids (CLUSTER_0, ...).
@@ -25,12 +69,17 @@ def diarize_audio(audio_path: str, output_dir: str) -> list:
     hf_token = os.environ.get("HF_TOKEN")
     if not hf_token:
         print("  Diarization: HF_TOKEN not set, skipping pyannote.audio")
+        _write_status(output_dir, "diarization", {
+            "status": "skipped",
+            "reason": "HF_TOKEN env var empty — repo secret missing or not visible to this workflow?"})
         return []
 
     try:
         from huggingface_hub import login
         from pyannote.audio import Pipeline
 
+        vers = _versions()
+        print(f"  Diarization stack: {vers}")
         login(token=hf_token)
 
         pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization-3.1")
@@ -61,10 +110,15 @@ def diarize_audio(audio_path: str, output_dir: str) -> list:
         for t in turns:
             counts[t["speaker"]] = counts.get(t["speaker"], 0) + 1
         print(f"  Diarization: {len(turns)} turns, clusters: {counts}")
+        _write_status(output_dir, "diarization", {
+            "status": "ok", "turns": len(turns), "clusters": counts, "versions": vers})
         return turns
 
     except Exception as e:
-        print(f"  Diarization failed: {e}")
+        print(f"  Diarization failed: {type(e).__name__}: {e}")
+        _write_status(output_dir, "diarization", {
+            "status": "failed", "error": f"{type(e).__name__}: {e}",
+            "versions": _versions(), "hint": _AUTH_HINT})
         return []
 
 
@@ -99,6 +153,8 @@ def compute_cluster_embeddings(audio_path: str, turns: list, output_dir: str,
     hf_token = os.environ.get("HF_TOKEN")
     if not hf_token:
         print("  Embeddings: HF_TOKEN not set, skipping voice vectors")
+        _write_status(output_dir, "embeddings", {
+            "status": "skipped", "reason": "HF_TOKEN env var empty"})
         return {}
 
     try:
@@ -141,11 +197,16 @@ def compute_cluster_embeddings(audio_path: str, turns: list, output_dir: str,
                 json.dump(embeddings, f, indent=1)
             dims = len(next(iter(embeddings.values())))
             print(f"  Voice vectors: {len(embeddings)} clusters x {dims} dims -> speaker_embeddings.json")
+            _write_status(output_dir, "embeddings", {
+                "status": "ok", "clusters": len(embeddings), "dims": dims})
         return embeddings
 
     except Exception as e:
         # e.g. pyannote/embedding model terms not accepted on the HF account
-        print(f"  Embedding extraction failed (voice bank inactive this run): {e}")
+        print(f"  Embedding extraction failed (voice bank inactive this run): {type(e).__name__}: {e}")
+        _write_status(output_dir, "embeddings", {
+            "status": "failed", "error": f"{type(e).__name__}: {e}",
+            "versions": _versions(), "hint": _AUTH_HINT})
         return {}
 
 

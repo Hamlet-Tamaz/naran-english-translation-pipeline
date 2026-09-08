@@ -5,6 +5,11 @@ moviepy
 srt
 openai
 pydub
-torch
-torchaudio
-pyannote.audio
+# Pinned audio stack: pyannote.audio 4.x (released 2025-09-29) broke the
+# 3.x-era API this pipeline uses, and huggingface_hub 1.x removed auth
+# plumbing pyannote 3.x relies on. Do NOT unpin without migrating
+# pipeline/diarize.py to the 4.x / community-1 API.
+torch>=2.4,<2.10
+torchaudio>=2.4,<2.10
+huggingface_hub>=0.24,<1.0
+pyannote.audio==3.4.0
