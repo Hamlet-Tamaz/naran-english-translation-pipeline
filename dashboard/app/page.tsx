@@ -777,7 +777,7 @@ function SpeakerEditor({ filename, version, authKey, currentTime, notify }: {
         (bySpeaker[sp] = bySpeaker[sp] || new Set()).add(cid);
       }
       const bank_updates = Object.entries(bySpeaker).map(([speaker, cids]) => ({
-        speaker, vectors: [...cids].map(c => embeddings[c]),
+        speaker, vectors: Array.from(cids).map(c => embeddings[c]),
       }));
 
       const res = await fetch("/api/speakers", {
