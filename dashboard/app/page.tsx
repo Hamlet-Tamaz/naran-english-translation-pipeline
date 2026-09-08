@@ -54,6 +54,7 @@ export default function Dashboard() {
   const [videoTime, setVideoTime] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
   const [speakerMap, setSpeakerMap] = useState<Record<string, number>>({});
+  const [previewSegments, setPreviewSegments] = useState<any[]>([]);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -208,9 +209,11 @@ export default function Dashboard() {
         }
       }
       setSpeakerMap(spMap);
+      setPreviewSegments(data.segments || []);
     } catch (e) { 
       setPreviewEnglish(""); 
       setSpeakerMap({});
+      setPreviewSegments([]);
     }
 
     setVideoTime(0); setVideoDuration(0);
@@ -459,7 +462,7 @@ export default function Dashboard() {
 
             {/* Text tabs + content - scrollable area */}
             <div style={{ padding: "12px 20px", overflow: "auto", flex: 1, minHeight: 0, background: "#18181b" }}>
-              <div style={{ display: "flex", gap: 12, marginBottom: 12, borderBottom: "1px solid #27272a", paddingBottom: 8, flexShrink: 0, position: "sticky", top: 0, background: "#18181b", zIndex: 1 }}>
+              <div style={{ display: "flex", gap: 12, margin: "-12px -20px 12px", padding: "12px 20px 8px", borderBottom: "1px solid #27272a", flexShrink: 0, position: "sticky", top: -12, background: "#18181b", zIndex: 2 }}>
                 <button onClick={() => setTextTab("caption")} style={{ background: "none", border: "none", color: textTab === "caption" ? "#3b82f6" : "#71717a", fontSize: 12, fontWeight: 500, cursor: "pointer", borderBottom: textTab === "caption" ? "2px solid #3b82f6" : "2px solid transparent", paddingBottom: 4 }}>Caption</button>
                 <button onClick={() => setTextTab("russian")} style={{ background: "none", border: "none", color: textTab === "russian" ? "#3b82f6" : "#71717a", fontSize: 12, fontWeight: 500, cursor: "pointer", borderBottom: textTab === "russian" ? "2px solid #3b82f6" : "2px solid transparent", paddingBottom: 4 }}>Russian Original</button>
                 <button onClick={() => setTextTab("english")} style={{ background: "none", border: "none", color: textTab === "english" ? "#3b82f6" : "#71717a", fontSize: 12, fontWeight: 500, cursor: "pointer", borderBottom: textTab === "english" ? "2px solid #3b82f6" : "2px solid transparent", paddingBottom: 4 }}>English Translation</button>
@@ -478,8 +481,12 @@ export default function Dashboard() {
                 )}
                 {textTab === "english" && (
                   <div>
-                    <div style={{ fontSize: 11, color: "#71717a", marginBottom: 8 }}>Full English translation with speaker labels:</div>
-                    <pre style={{ margin: 0, fontSize: 12, color: "#d4d4d8", whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: 1.6 }}>{previewEnglish || "English translation not available."}</pre>
+                    <div style={{ fontSize: 11, color: "#71717a", marginBottom: 8 }}>English translation, separated by speaker:</div>
+                    {previewSegments.length > 0 ? (
+                      <SpeakerGroupedText segments={previewSegments} />
+                    ) : (
+                      <pre style={{ margin: 0, fontSize: 12, color: "#d4d4d8", whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: 1.6 }}>{previewEnglish || "English translation not available."}</pre>
+                    )}
                   </div>
                 )}
                 {textTab === "speakers" && (
@@ -559,8 +566,8 @@ function EmptyState({ text }: { text: string }) {
 // visible and editable here after creation.
 // ---------------------------------------------------------------------------
 
-type SpeechBlock = { start: number; end: number; origSpeaker: string; segs: number; sample: string };
-type AttrRule = { id: string; start: number; end: number; speaker: string; created_at?: string };
+type SpeechBlock = { start: number; end: number; origSpeaker: string; segs: number; sample: string; text: string };
+type AttrRule = { id: string; start: number; end: number; speaker: string; created_at?: string; text_override?: string };
 
 const SPEAKER_COLORS: Record<string, string> = {
   "Naran": "#3b82f6",
@@ -584,6 +591,8 @@ function SpeakerEditor({ filename, version, authKey, currentTime, notify }: {
   const [embeddings, setEmbeddings] = useState<Record<string, number[]>>({});
   const [turns, setTurns] = useState<{ start: number; end: number; speaker: string }[]>([]);
   const [newSpeaker, setNewSpeaker] = useState("");
+  const [expanded, setExpanded] = useState<number | null>(null);
+  const [textEdits, setTextEdits] = useState<Record<number, string>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -603,9 +612,9 @@ function SpeakerEditor({ filename, version, authKey, currentTime, notify }: {
           const sp = s.speaker || "Naran";
           const last = bl[bl.length - 1];
           if (last && last.origSpeaker === sp && s.start - last.end < 1.0) {
-            last.end = s.end; last.segs++;
+            last.end = s.end; last.segs++; last.text += " " + (s.text || "");
           } else {
-            bl.push({ start: s.start, end: s.end, origSpeaker: sp, segs: 1, sample: (s.text || "").slice(0, 90) });
+            bl.push({ start: s.start, end: s.end, origSpeaker: sp, segs: 1, sample: (s.text || "").slice(0, 90), text: s.text || "" });
           }
         }
         if (!cancelled) setBlocks(bl);
@@ -679,6 +688,69 @@ function SpeakerEditor({ filename, version, authKey, currentTime, notify }: {
   function addCustomRule() {
     const start = Math.floor(currentTime);
     setRules(prev => [...prev, { id: genId(), start, end: start + 30, speaker: "Naran" }]);
+    setDirty(true);
+  }
+
+  function coveringRule(b: SpeechBlock): AttrRule | undefined {
+    const mid = (b.start + b.end) / 2;
+    const sorted = [...rules].sort((a, c) => a.start - c.start);
+    let winner: AttrRule | undefined;
+    for (const r of sorted) if (r.start <= mid && mid <= r.end) winner = r;
+    return winner;
+  }
+
+  function splitBlock(idx: number) {
+    const b = blocks[idx];
+    const T = Math.round(currentTime * 10) / 10;
+    if (!(T > b.start + 0.2 && T < b.end - 0.2)) {
+      notify(`Scrub the video inside the section first (now at ${fmt(currentTime)}), then split.`);
+      return;
+    }
+    const sp = effectiveSpeaker(b);
+    setRules(prev => {
+      const kept = prev.filter(r => {
+        const overlap = Math.min(r.end, b.end) - Math.max(r.start, b.start);
+        const rMid = (r.start + r.end) / 2;
+        const inside = b.start <= rMid && rMid <= b.end;
+        return !(inside || overlap / Math.max(b.end - b.start, 0.01) > 0.5);
+      });
+      return [...kept,
+        { id: genId(), start: b.start, end: T, speaker: sp },
+        { id: genId(), start: T, end: b.end, speaker: sp }];
+    });
+    setDirty(true);
+  }
+
+  function joinWithNext(idx: number) {
+    const b = blocks[idx], n = blocks[idx + 1];
+    if (!n) return;
+    const sp = effectiveSpeaker(b);
+    setRules(prev => {
+      const kept = prev.filter(r => {
+        const rMid = (r.start + r.end) / 2;
+        const inB = b.start <= rMid && rMid <= b.end;
+        const inN = n.start <= rMid && rMid <= n.end;
+        return !(inB || inN);
+      });
+      return [...kept, { id: genId(), start: b.start, end: n.end, speaker: sp }];
+    });
+    setDirty(true);
+  }
+
+  function applyTextEdit(idx: number) {
+    const b = blocks[idx];
+    const text = (textEdits[idx] ?? "").trim();
+    const original = b.text.trim();
+    const mid = (b.start + b.end) / 2;
+    setRules(prev => {
+      const i = prev.findIndex(r => r.start <= mid && mid <= r.end);
+      if (text && text !== original) {
+        if (i >= 0) { const next = [...prev]; next[i] = { ...next[i], text_override: text }; return next; }
+        return [...prev, { id: genId(), start: b.start, end: b.end, speaker: effectiveSpeaker(b), text_override: text }];
+      }
+      if (i >= 0) { const next = [...prev]; const r: any = { ...next[i] }; delete r.text_override; next[i] = r; return next; }
+      return prev;
+    });
     setDirty(true);
   }
 
@@ -774,16 +846,42 @@ function SpeakerEditor({ filename, version, authKey, currentTime, notify }: {
             const eff = effectiveSpeaker(b);
             const active = currentTime >= b.start && currentTime < b.end;
             const changed = eff !== b.origSpeaker;
+            const covRule = coveringRule(b);
+            const hasOverride = !!covRule?.text_override;
+            const isOpen = expanded === i;
             return (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 10px", borderRadius: 6, border: `1px solid ${active ? "#3b82f6" : "#27272a"}`, background: active ? "rgba(59,130,246,0.08)" : "rgba(255,255,255,0.02)" }}>
-                <span style={{ fontSize: 11, color: active ? "#3b82f6" : "#a1a1aa", fontFamily: "monospace", flexShrink: 0, minWidth: 86 }}>
-                  {fmt(b.start)}–{fmt(b.end)}
-                </span>
-                <select value={eff} onChange={e => assignBlock(i, e.target.value)} style={selectStyle(speakerColor(eff))}>
-                  {speakerOptions.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-                {changed && <span style={{ fontSize: 10, color: "#71717a", flexShrink: 0 }}>(auto: {b.origSpeaker})</span>}
-                <span style={{ fontSize: 11, color: "#71717a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.sample}</span>
+              <div key={i}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 10px", borderRadius: 6, border: `1px solid ${active ? "#3b82f6" : "#27272a"}`, background: active ? "rgba(59,130,246,0.08)" : "rgba(255,255,255,0.02)" }}>
+                  <span style={{ fontSize: 11, color: active ? "#3b82f6" : "#a1a1aa", fontFamily: "monospace", flexShrink: 0, minWidth: 86 }}>
+                    {fmt(b.start)}–{fmt(b.end)}
+                  </span>
+                  <select value={eff} onChange={e => assignBlock(i, e.target.value)} style={selectStyle(speakerColor(eff))}>
+                    {speakerOptions.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                  {changed && <span style={{ fontSize: 10, color: "#71717a", flexShrink: 0 }}>(auto: {b.origSpeaker})</span>}
+                  {hasOverride && <span style={{ fontSize: 10, color: "#86efac", flexShrink: 0 }} title={covRule?.text_override}>✎ edited</span>}
+                  <span onClick={() => setExpanded(isOpen ? null : i)} style={{ fontSize: 11, color: "#71717a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: "pointer", flex: 1 }} title="Click to expand / edit">{b.sample}</span>
+                  <button onClick={() => setExpanded(isOpen ? null : i)} style={{ background: "none", border: "none", color: "#71717a", fontSize: 11, cursor: "pointer", flexShrink: 0 }}>{isOpen ? "▴" : "▾"}</button>
+                </div>
+                {isOpen && (
+                  <div style={{ padding: "8px 10px", margin: "2px 0 6px 8px", borderLeft: "2px solid #3b82f6", display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div style={{ fontSize: 11, color: "#a1a1aa", lineHeight: 1.5, maxHeight: 90, overflow: "auto" }}>{b.text}</div>
+                    <textarea
+                      value={textEdits[i] ?? covRule?.text_override ?? b.text}
+                      onChange={e => setTextEdits(prev => ({ ...prev, [i]: e.target.value }))}
+                      rows={3}
+                      style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #3f3f46", background: "#27272a", color: "#e4e4e7", fontSize: 12, lineHeight: 1.5, resize: "vertical", boxSizing: "border-box" }}
+                    />
+                    <div style={{ fontSize: 10, color: "#52525b" }}>Text edits replace this section's English on the next reprocess (voiceover + subtitles included).</div>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      <button onClick={() => applyTextEdit(i)} style={{ padding: "4px 10px", borderRadius: 4, border: "1px solid #3b82f660", background: "transparent", color: "#3b82f6", fontSize: 11, cursor: "pointer" }}>✎ Apply text edit</button>
+                      <button onClick={() => splitBlock(i)} style={{ padding: "4px 10px", borderRadius: 4, border: "1px solid #f59e0b60", background: "transparent", color: "#f59e0b", fontSize: 11, cursor: "pointer" }}>✂ Split at {fmt(currentTime)}</button>
+                      {i < blocks.length - 1 && (
+                        <button onClick={() => joinWithNext(i)} style={{ padding: "4px 10px", borderRadius: 4, border: "1px solid #22c55e60", background: "transparent", color: "#22c55e", fontSize: 11, cursor: "pointer" }}>⛓ Join with next</button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -816,6 +914,7 @@ function SpeakerEditor({ filename, version, authKey, currentTime, notify }: {
                 <select value={r.speaker} onChange={e => updateRule(r.id, { speaker: e.target.value })} style={selectStyle(speakerColor(r.speaker))}>
                   {speakerOptions.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
+                {r.text_override && <span style={{ fontSize: 10, color: "#86efac", flexShrink: 0 }} title={r.text_override}>✎ text</span>}
                 <button onClick={() => { setRules(prev => prev.filter(x => x.id !== r.id)); setDirty(true); }}
                   style={{ marginLeft: "auto", background: "none", border: "none", color: "#71717a", fontSize: 14, cursor: "pointer" }} title="Delete rule">✕</button>
               </div>
@@ -845,6 +944,31 @@ function SpeakerEditor({ filename, version, authKey, currentTime, notify }: {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// English translation grouped into per-speaker blocks (no more blob).
+function SpeakerGroupedText({ segments }: { segments: any[] }) {
+  const fmt = (s: number) => `${Math.floor(s / 60)}:${Math.floor(s % 60).toString().padStart(2, "0")}`;
+  const blocks: { speaker: string; start: number; end: number; texts: string[] }[] = [];
+  for (const s of segments) {
+    if (!Number.isFinite(s.start) || !Number.isFinite(s.end)) continue;
+    const sp = s.speaker || "Naran";
+    const last = blocks[blocks.length - 1];
+    if (last && last.speaker === sp) { last.texts.push(s.text || ""); last.end = s.end; }
+    else blocks.push({ speaker: sp, start: s.start, end: s.end, texts: [s.text || ""] });
+  }
+  return (
+    <div>
+      {blocks.map((b, i) => (
+        <div key={i} style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: speakerColor(b.speaker), marginBottom: 3 }}>
+            {b.speaker} <span style={{ color: "#52525b", fontWeight: 400 }}>{fmt(b.start)}–{fmt(b.end)}</span>
+          </div>
+          <div style={{ fontSize: 12, color: "#d4d4d8", lineHeight: 1.6 }}>{b.texts.join(" ")}</div>
+        </div>
+      ))}
     </div>
   );
 }
