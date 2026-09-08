@@ -120,9 +120,11 @@ def main():
     # unavailable, translate_hardened's GPT text fallback assigns speakers
     # itself and would have overwritten the rule-based labels. User rules
     # always win; re-save translation.json so artifacts agree with the video.
+    # apply_text=True: rules carrying text_override also merge their covered
+    # segments into one with the user's edited English text.
     post_rules = load_corrections(video_id)
     if post_rules:
-        translation["segments"], relabeled = apply_corrections(translation.get("segments", []), post_rules)
+        translation["segments"], relabeled = apply_corrections(translation.get("segments", []), post_rules, apply_text=True)
         if relabeled:
             with open(os.path.join(out_dir, "translation.json"), "w", encoding="utf-8") as f:
                 json.dump(translation, f, ensure_ascii=False, indent=2)

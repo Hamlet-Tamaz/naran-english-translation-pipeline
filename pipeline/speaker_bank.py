@@ -155,7 +155,8 @@ def corrections_path(video_id, processed_dir="processed"):
 
 def load_corrections(video_id, processed_dir="processed"):
     """Returns the rule list for a video, or [] if none/invalid.
-    Rule: {"id", "start", "end", "speaker", "note", "created_at", "updated_at"}"""
+    Rule: {"id", "start", "end", "speaker", "note", "created_at",
+    "updated_at", optional "text_override"}"""
     path = corrections_path(video_id, processed_dir)
     if not os.path.exists(path):
         return []
@@ -170,12 +171,17 @@ def load_corrections(video_id, processed_dir="processed"):
         return []
 
 
-def apply_corrections(segments, rules):
+def apply_corrections(segments, rules, apply_text=False):
     """Hard-override segment speakers from time-range rules.
 
     A segment inherits a rule's speaker when its MIDPOINT falls inside the
     rule's [start, end] range. Rules apply in list order — later rules win
-    where ranges overlap. Returns (segments, relabeled_count)."""
+    where ranges overlap. Returns (segments, relabeled_count).
+
+    With apply_text=True (use ONLY on translated/English segments, after
+    translation), a rule carrying "text_override" additionally MERGES every
+    segment it covers into a single segment whose text is the override —
+    this is how user text edits reach the voiceover and subtitles."""
     if not segments or not rules:
         return segments, 0
     ordered = sorted(rules, key=lambda r: (r.get("start", 0), r.get("end", 0)))
@@ -189,4 +195,21 @@ def apply_corrections(segments, rules):
         if winner and seg.get("speaker") != winner["speaker"]:
             seg["speaker"] = winner["speaker"]
             relabeled += 1
+
+    if apply_text:
+        for r in ordered:
+            override = (r.get("text_override") or "").strip()
+            if not override:
+                continue
+            rs, re_ = r.get("start", 0), r.get("end", 0)
+            covered = [i for i, s in enumerate(segments)
+                       if rs - 1e-6 <= (s.get("start", 0) + s.get("end", 0)) / 2.0 <= re_ + 1e-6]
+            if not covered:
+                continue
+            first = dict(segments[covered[0]])
+            first["end"] = segments[covered[-1]].get("end", first.get("end"))
+            first["text"] = override
+            first["speaker"] = r["speaker"]
+            segments[covered[0]:covered[-1] + 1] = [first]
+
     return segments, relabeled
