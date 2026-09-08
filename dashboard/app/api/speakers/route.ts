@@ -10,7 +10,7 @@ export const maxDuration = 60;
 //   key          dashboard password (same guard as /api/run)
 //   video        video id WITHOUT .mp4 (e.g. "naran-hangai-smaller")
 //   rules        full replacement rule list for the video:
-//                [{ start, end, speaker, note?, created_at? }]
+//                [{ start, end, speaker, note?, created_at?, text_override? }]
 //   bank_updates [{ speaker, vectors: number[][] }] — cluster embeddings the
 //                user confirmed for that speaker; merged into their profile
 //   bank_resets  [speaker] — delete these voice profiles
@@ -131,6 +131,7 @@ export async function POST(req: Request) {
         end: Math.round(r.end * 100) / 100,
         speaker: r.speaker.trim(),
         ...(typeof r.note === "string" && r.note ? { note: r.note.slice(0, 200) } : {}),
+        ...(typeof r.text_override === "string" && r.text_override.trim() ? { text_override: r.text_override.slice(0, 4000) } : {}),
         created_at: typeof r.created_at === "string" && r.created_at ? r.created_at : now,
         updated_at: now,
       }))
