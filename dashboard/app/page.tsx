@@ -54,6 +54,7 @@ export default function Dashboard() {
   const [videoTime, setVideoTime] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
   const [speakerMap, setSpeakerMap] = useState<Record<string, number>>({});
+  const [pipelineHealth, setPipelineHealth] = useState<any>(null);
   const [previewSegments, setPreviewSegments] = useState<any[]>([]);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -118,8 +119,39 @@ export default function Dashboard() {
     try {
       const res = await fetch("https://raw.githubusercontent.com/Hamlet-Tamaz/naran-english-translation-pipeline/main/queue.json?t=" + Date.now());
       const data = await res.json();
-      setVideos(data.videos || []);
+      const vids = data.videos || [];
+      setVideos(vids);
+      fetchPipelineHealth(vids);
     } catch (e) {}
+  }
+
+  // Pipeline health from committed run artifacts — this reflects the REAL
+  // GitHub Actions run, unlike env-check (which only sees Vercel env vars).
+  async function fetchPipelineHealth(vids: QueueVideo[]) {
+    try {
+      const RAW = "https://raw.githubusercontent.com/Hamlet-Tamaz/naran-english-translation-pipeline/main";
+      const done = vids.filter(v => v.status === "completed" && v.processed_at);
+      if (done.length === 0) { setPipelineHealth(null); return; }
+      done.sort((a, b) => String(b.processed_at).localeCompare(String(a.processed_at)));
+      const videoId = done[0].filename.replace(".mp4", "");
+      const vres = await fetch(`${RAW}/processed/${videoId}/versions.json?t=${Date.now()}`);
+      if (!vres.ok) { setPipelineHealth({ videoId, error: "versions.json missing" }); return; }
+      const vdata = await vres.json();
+      const versions: VersionInfo[] = vdata.versions || [];
+      if (versions.length === 0) { setPipelineHealth({ videoId, error: "no versions yet" }); return; }
+      let latest = versions[0];
+      for (const v of versions) { if (v.number > latest.number) latest = v; }
+      const base = `${RAW}/processed/${videoId}/v${latest.number}`;
+      const sres = await fetch(`${base}/diarization_status.json?t=${Date.now()}`);
+      const diaStatus = sres.ok ? await sres.json() : null;
+      const hasDia = await fetch(`${base}/diarization.json?t=${Date.now()}`).then(r => r.ok).catch(() => false);
+      const hasEmb = await fetch(`${base}/speaker_embeddings.json?t=${Date.now()}`).then(r => r.ok).catch(() => false);
+      const hasBank = await fetch(`${RAW}/speaker-bank/profiles.json?t=${Date.now()}`).then(r => r.ok).catch(() => false);
+      setPipelineHealth({
+        videoId, version: latest.number, robustness: latest.robustness,
+        diaStatus, artifacts: { diarization: hasDia, embeddings: hasEmb, voiceBank: hasBank },
+      });
+    } catch (e) { /* keep last known health on transient fetch errors */ }
   }
 
   async function fetchVersions(filename: string) {
@@ -314,7 +346,7 @@ export default function Dashboard() {
           <div>Translation: <span style={{ color: "#d4d4d8" }}>{currentLevel.trans}</span></div>
           <div>Voiceover: <span style={{ color: "#d4d4d8" }}>{currentLevel.voice}</span></div>
           <div>Speakers: <span style={{ color: "#d4d4d8" }}>{currentLevel.speakers}</span></div>
-          <div>Est. cost: <span style={{ color: currentLevel.color, fontWeight: 600 }}>${currentLevel.cost.toFixed(2)}/video</span></div>
+          <div>Est. cost: <span style={{ color: currentLevel.color, fontWeight: 600 }}>${level.cost.toFixed(2)}/video</span></div>
         </div>
       </div>
 
@@ -329,8 +361,52 @@ export default function Dashboard() {
             <StatusRow label="GitHub API" ready={githubReady} />
             <StatusRow label="OpenAI Voiceover" ready={true} />
             <StatusRow label="Cloud Storage (R2)" ready={envStatus?.r2_ready} optional />
-            <StatusRow label="Speaker Diarization" ready={!!envStatus?.checks?.HF_TOKEN} optional />
+            <StatusRow label="HF Token (dashboard env)" ready={!!envStatus?.checks?.HF_TOKEN} optional />
           </div>
+          {pipelineHealth && (
+            <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #27272a" }}>
+              <div style={{ fontSize: 12, color: "#71717a", marginBottom: 8 }}>
+                Last pipeline run: <span style={{ color: "#a1a1aa" }}>{pipelineHealth.videoId} · v{pipelineHealth.version} · {pipelineHealth.robustness}</span>
+              </div>
+              {pipelineHealth.error ? (
+                <HealthRow state="missing" label="Run artifacts" detail={pipelineHealth.error} />
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <HealthRow
+                    state={!pipelineHealth.diaStatus ? "missing" : (pipelineHealth.diaStatus.diarization?.status || "missing")}
+                    label="Speaker Diarization (pyannote)"
+                    detail={!pipelineHealth.diaStatus
+                      ? "no status file — this run predates self-diagnostics; rerun to see the exact cause"
+                      : pipelineHealth.diaStatus.diarization?.status === "ok"
+                        ? `${pipelineHealth.diaStatus.diarization.turns} turns, clusters: ${JSON.stringify(pipelineHealth.diaStatus.diarization.clusters || {})}`
+                        : pipelineHealth.diaStatus.diarization?.error || pipelineHealth.diaStatus.diarization?.reason || ""}
+                  />
+                  <HealthRow
+                    state={!pipelineHealth.diaStatus ? "missing" : (pipelineHealth.diaStatus.embeddings?.status || "missing")}
+                    label="Voice Vectors (speaker bank seed)"
+                    detail={pipelineHealth.diaStatus?.embeddings?.status === "ok"
+                      ? `${pipelineHealth.diaStatus.embeddings.clusters} clusters x ${pipelineHealth.diaStatus.embeddings.dims} dims`
+                      : pipelineHealth.diaStatus?.embeddings?.error || pipelineHealth.diaStatus?.embeddings?.reason || ""}
+                  />
+                  <HealthRow
+                    state={pipelineHealth.artifacts?.voiceBank ? "ok" : "missing"}
+                    label="Voice Bank (cross-video profiles)"
+                    detail={pipelineHealth.artifacts?.voiceBank ? "speaker-bank/profiles.json present" : "no confirmed voice profiles yet"}
+                  />
+                  {pipelineHealth.diaStatus?.diarization?.status === "failed" && pipelineHealth.diaStatus?.diarization?.hint && (
+                    <div style={{ fontSize: 11, color: "#fcd34d", lineHeight: 1.5, padding: "8px 10px", borderRadius: 6, background: "rgba(245,158,11,0.08)" }}>
+                      {pipelineHealth.diaStatus.diarization.hint}
+                    </div>
+                  )}
+                  {pipelineHealth.diaStatus?.diarization?.versions && (
+                    <div style={{ fontSize: 11, color: "#52525b" }}>
+                      Stack: pyannote.audio {pipelineHealth.diaStatus.diarization.versions["pyannote.audio"]} · huggingface_hub {pipelineHealth.diaStatus.diarization.versions["huggingface_hub"]} · torch {pipelineHealth.diaStatus.diarization.versions["torch"]}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -512,6 +588,26 @@ function StatusRow({ label, ready, optional }: { label: string; ready: boolean; 
       <div style={{ width: 8, height: 8, borderRadius: "50%", background: ready ? "#22c55e" : optional ? "#f59e0b" : "#ef4444" }} />
       <span style={{ color: "#a1a1aa" }}>{label}</span>
       <span style={{ color: ready ? "#86efac" : optional ? "#fcd34d" : "#fca5a5", fontSize: 12 }}>{ready ? "Ready" : optional ? "Optional" : "Missing"}</span>
+    </div>
+  );
+}
+
+function HealthRow({ label, state, detail }: { label: string; state: string; detail?: string }) {
+  const colors: Record<string, string[]> = {
+    ok: ["#22c55e", "#86efac", "OK"],
+    failed: ["#ef4444", "#fca5a5", "Failed"],
+    skipped: ["#f59e0b", "#fcd34d", "Skipped"],
+    missing: ["#71717a", "#a1a1aa", "No data"],
+  };
+  const c = colors[state] || ["#71717a", "#a1a1aa", "Unknown"];
+  return (
+    <div style={{ fontSize: 13 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ width: 8, height: 8, borderRadius: "50%", background: c[0], flexShrink: 0 }} />
+        <span style={{ color: "#a1a1aa" }}>{label}</span>
+        <span style={{ color: c[1], fontSize: 12 }}>{c[2]}</span>
+      </div>
+      {detail && <div style={{ color: "#71717a", fontSize: 11, marginTop: 2, marginLeft: 16, lineHeight: 1.5, wordBreak: "break-word" }}>{detail}</div>}
     </div>
   );
 }
