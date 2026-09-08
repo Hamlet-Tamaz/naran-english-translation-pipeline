@@ -346,7 +346,7 @@ export default function Dashboard() {
           <div>Translation: <span style={{ color: "#d4d4d8" }}>{currentLevel.trans}</span></div>
           <div>Voiceover: <span style={{ color: "#d4d4d8" }}>{currentLevel.voice}</span></div>
           <div>Speakers: <span style={{ color: "#d4d4d8" }}>{currentLevel.speakers}</span></div>
-          <div>Est. cost: <span style={{ color: currentLevel.color, fontWeight: 600 }}>${level.cost.toFixed(2)}/video</span></div>
+          <div>Est. cost: <span style={{ color: currentLevel.color, fontWeight: 600 }}>${currentLevel.cost.toFixed(2)}/video</span></div>
         </div>
       </div>
 
